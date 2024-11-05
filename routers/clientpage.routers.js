@@ -768,9 +768,11 @@ router.get('/', authenticateToken, async (req, res) => {
  *         description: Error marking client page as inactive
  */
 router.put('/delete/:id', authenticateToken, async (req, res) => {
-  console.log("this is thedelete page")
+  console.log("this is the delete page");
   try {
     const { id } = req.params;
+
+    console.log(id);
 
     // Find the client page by ID
     const clientPage = await ClientPage.findByPk(id);
@@ -779,14 +781,18 @@ router.put('/delete/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'ClientPage not found' });
     }
 
-    // Perform a soft delete by updating the `status` and `is_active` field
+    // Check the current status and toggle it
+    const newStatus = clientPage.is_active ? false : true; // Toggle the is_active status
+    const newStatusText = newStatus ? 'Active' : 'Inactive'; // Determine new status text
+
+    // Perform the update
     await clientPage.update({
-      status: 'Inactive',  // Update the status field to 'Inactive'
-      is_active: false,    // Set the `is_active` field to false to indicate soft deletion
+      status: newStatusText,  // Update the status field based on the new status
+      is_active: newStatus,    // Set the is_active field to the new status
     });
 
     res.status(200).json({
-      message: 'ClientPage marked as inactive successfully',
+      message: `ClientPage marked as ${newStatusText} successfully`,
       clientPage  // Return the updated clientPage object
     });
   } catch (error) {
@@ -796,5 +802,7 @@ router.put('/delete/:id', authenticateToken, async (req, res) => {
     });
   }
 });
+
+
 
 module.exports = router;

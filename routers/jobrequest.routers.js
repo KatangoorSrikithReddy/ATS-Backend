@@ -290,41 +290,77 @@ router.put('/:jobRequestId', authenticateToken, async (req, res) => {
   }
 });
 
-
 /**
  * @swagger
- * /job-requests/{jobRequestId}:
- *   delete:
- *     summary: Delete a job request (soft delete)
- *     tags: [JobRequests]
+ * /{jobRequestId}:
+ *   put:
+ *     summary: Toggle job request active status
+ *     tags: [Job Requests]
  *     parameters:
  *       - in: path
  *         name: jobRequestId
  *         required: true
+ *         description: ID of the job request to update
  *         schema:
- *           type: integer
- *         description: ID of the job request to delete
+ *           type: string
  *     responses:
  *       200:
- *         description: Job request deactivated successfully
+ *         description: Job request status updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 jobRequest:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     is_active:
+ *                       type: boolean
  *       404:
  *         description: Job request not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
  *       500:
- *         description: Failed to delete job request
+ *         description: Error updating job request status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
  */
-router.delete('/:jobRequestId', async (req, res) => {
+router.put('/:jobRequestId/', authenticateToken, async (req, res) => {
+  const { jobRequestId } = req.params;
+
   try {
-    const jobRequest = await JobRequest.findByPk(req.params.jobRequestId);
+    const jobRequest = await JobRequest.findByPk(jobRequestId);
     if (!jobRequest) {
-      return res.status(404).json({ error: 'Job Request not found' });
+      return res.status(404).json({ message: 'Job request not found' });
     }
 
-    jobRequest.is_active = false;
-    await jobRequest.save();
-    res.json({ message: 'Job Request deactivated successfully' });
+    // Toggle the is_active status
+    jobRequest.is_active = !jobRequest.is_active;
+    await jobRequest.save(); // Save the updated status
+
+    res.status(200).json({
+      message: `Job request marked as ${jobRequest.is_active ? 'active' : 'inactive'} successfully`,
+      jobRequest,
+    });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to delete job request' });
+    console.error('Error toggling job request status:', error);
+    res.status(500).json({ message: 'Error updating job request status' });
   }
 });
+
 
 module.exports = router;
