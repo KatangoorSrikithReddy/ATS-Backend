@@ -366,7 +366,7 @@
 
 
 const express = require('express');
-const { ClientPage , Contact} = require('../models');
+const { ClientPage , Contact, JobRequest} = require('../models');
 const router = express.Router();
 
 const authenticateToken = require('../middlewaare/auth');
@@ -585,6 +585,7 @@ router.post('/', authenticateToken, async (req, res) => {
  *         description: Error fetching client pages
  */
 router.get('/', authenticateToken, async (req, res) => {
+  console.log("hiting")
     try {
       const clientPages = await ClientPage.findAll({
         include: [
@@ -592,8 +593,13 @@ router.get('/', authenticateToken, async (req, res) => {
             model: Contact,   // Including the Contact model
             as: 'contacts',   // Alias defined in the association
           },
+          {
+            model: JobRequest,  // Including the JobRequest model
+            as: 'jobRequests',  // Alias defined in the association
+          },
         ],
       });
+      console.log(clientPages)
   
       res.status(200).json(clientPages);
     } catch (error) {

@@ -43,9 +43,9 @@ const SECRET_KEY = 'ced35672f556c0ade93da500e7b579a9bf2543f6499c082463dbf1fd8776
  *           type: string
  *           description: The hashed password of the user
  *       example:
- *         email: test@example.com
+ *         email: srikith@example.com
  *         username: testuser
- *         password: password123
+ *         password: Katangoor@6
  *         firstName: John
  *         lastName: Doe
  *         role: user
@@ -163,8 +163,8 @@ router.post('/registers', async (req, res) => {
  *                 type: string
  *                 description: The user's password
  *             example:
- *               username: test@example.com
- *               password: password123
+ *               username: srikith@example.com
+ *               password: Katangoor@6
  *     responses:
  *       200:
  *         description: The user was successfully logged in
