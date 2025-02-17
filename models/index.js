@@ -1,21 +1,19 @@
-const dbConfig = require("../config/db-config.js");
+require("dotenv").config(); // ✅ Load .env variables
 
 const {Sequelize, DataTypes} = require("sequelize");
+const dbConfig = require("../config/config.js"); 
 
 
-
-const sequelize = new Sequelize(dbConfig.DB, dbConfig.USER, dbConfig.PASSWORD, {
-  host: dbConfig.HOST,
-  dialect: dbConfig.dialect,
-//   operatorsAliases: false,
-
-  pool: {
-    max: dbConfig.pool.max,
-    min: dbConfig.pool.min,
-    acquire: dbConfig.pool.acquire,
-    idle: dbConfig.pool.idle
-  }
-});
+const sequelize = new Sequelize(
+    dbConfig.development.database,
+    dbConfig.development.username,
+    dbConfig.development.password,
+    {
+      host: dbConfig.development.host,
+      dialect: dbConfig.development.dialect,
+      logging: false, // Optional: Prevents console logs from Sequelize
+    }
+  );
 
 const db = {};
 
@@ -28,17 +26,29 @@ console.log("Is it working")
 db.JobRequest = require('./jobrequest.js')(sequelize, Sequelize);
 db.ClientPage = require('./clientpage.js')(sequelize, Sequelize);
 db.Contact = require('./clientcontact.js')(sequelize, Sequelize); // New Contact model
+db.Roles = require('./roles.js')(sequelize, Sequelize);
+db.Individuals = require('./individuals.js')(sequelize, Sequelize);
+db.LevelHierarchy = require('./levelhierarchy.js')(sequelize, Sequelize);
 
-// db.Client.hasMany(db.JobRequest, {
-//     foreignKey: "client_id",  // Explicitly set the foreign key to client_id
-//     as: "job_requests"        // Alias for referencing associated job requests
-//   });
-//   db.JobRequest.belongsTo(db.Client, {
-//     foreignKey: "client_id",  // Explicitly set the foreign key to client_id
-//     as: "client"              // Alias for referencing the associated client
-//   });
+db.UserRoles = require("./individualandroles.js")(sequelize, DataTypes);
 
+// ✅ Individual belongs to Role through UserRoles
+db.Individuals.belongsToMany(db.Roles, { 
+  through: db.UserRoles, 
+  foreignKey: "user_id", 
+  as: "roles" 
+});
 
+// ✅ Role belongs to many Individuals through UserRoles
+db.Roles.belongsToMany(db.Individuals, { 
+  through: db.UserRoles, 
+  foreignKey: "role_id", 
+  as: "users" 
+});
+
+// ✅ UserRoles Table: Establish the many-to-one mapping
+db.UserRoles.belongsTo(db.Individuals, { foreignKey: "user_id", as: "user" });
+db.UserRoles.belongsTo(db.Roles, { foreignKey: "role_id", as: "role" });
 
 
 db.ClientPage.hasMany(db.Contact, {
