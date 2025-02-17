@@ -13,6 +13,7 @@ const jobrequest = require('../models/jobrequest');
 console.log('JobRequest Model:', JobRequest);
 console.log('Client Model:', ClientPage);
 const authenticateToken = require('../middlewaare/auth');
+console.log("Received Token for job request:", authenticateToken);
 /**
  * @swagger
  * components:
@@ -103,6 +104,7 @@ const authenticateToken = require('../middlewaare/auth');
  *         description: Failed to create job request
  */
 router.post('/', authenticateToken, async (req, res) => {
+  console.log("this is different user", req.user);
   try {
     console.log('Request body:', req.body); // Check what data is coming in
     const client = await ClientPage.findByPk(req.body.client_id);

@@ -12,6 +12,10 @@ const app = express(); // Create an express app
 const jobRequestRoutes = require('./routers/jobrequest.routers')
 const clientpageRoutes = require('./routers/clientpage.routers')
 const contactRouter = require('./routers/clientcontats.routers');
+const rolesRouter = require('./routers/roles.routers');
+const IndividualRouter = require('./routers/individuals.routers');
+const IndividualandRoles =   require('./routers/individualsroles.routers');
+const LevelHierarchies = require('./routers/level.routers');
 
 app.use(express.json());
 app.use(bodyParser.json());
@@ -30,6 +34,10 @@ app.use('/job-requests', jobRequestRoutes);
 app.use('/client-page', clientpageRoutes )
 
 app.use('/clientcontact', contactRouter);
+app.use('/roles', rolesRouter)
+app.use('/individuals', IndividualRouter )
+app.use("/individualsRoles", IndividualandRoles)
+app.use('/levelhierarchies', LevelHierarchies)
 
 
 
