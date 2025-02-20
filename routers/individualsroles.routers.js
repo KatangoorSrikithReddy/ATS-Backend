@@ -297,6 +297,85 @@ router.post("/login", async (req, res) => {
     }
   });
 
+
+
+/**
+ * @swagger
+ * /individualsRoles/get-users-with-roles:
+ *   get:
+ *     summary: Get all users with their assigned roles
+ *     description: Retrieves a list of all users along with their assigned roles from the UserRoles table.
+ *     tags:
+ *       - Individuals and Roles
+ *     responses:
+ *       200:
+ *         description: List of users with their assigned roles.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   user_id:
+ *                     type: string
+ *                     format: uuid
+ *                     example: "123e4567-e89b-12d3-a456-426614174000"
+ *                   username:
+ *                     type: string
+ *                     example: "john_doe"
+ *                   email:
+ *                     type: string
+ *                     example: "john@example.com"
+ *                   roles:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                       properties:
+ *                         role_id:
+ *                           type: string
+ *                           format: uuid
+ *                           example: "6e8cc34a-e9f4-11ef-bc93-6c24086040f8"
+ *                         role_name:
+ *                           type: string
+ *                           example: "Admin"
+ *                         level:
+ *                           type: string
+ *                           example: "Level 1"
+ *       500:
+ *         description: Server error.
+ */
+
+router.get("/get-users-with-roles", async (req, res) => {
+    console.log("🔥 Fetching Users with Roles");
+
+    try {
+        const userRoles = await UserRoles.findAll({
+            include: [
+                {
+                    model: Individuals,
+                    as: 'user',  // This is the alias used in the association
+                    attributes: ['id', 'username', 'email', 'first_name', 'last_name'],  // Add the fields you need
+                },
+                {
+                    model: Roles,
+                    as: 'role',  // This is the alias used in the association
+                    attributes: ['id', 'role_name'],  // Add the fields you need
+                }
+            ]
+        });
+
+        // Send the user roles as the response
+        res.json(userRoles);
+    } catch (error) {
+        console.error('Error fetching user roles:', error);
+        res.status(500).json({ error: 'Failed to fetch user roles' });
+    }
+});
+
+
+
+
 module.exports = router;
 
 

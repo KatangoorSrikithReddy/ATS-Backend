@@ -269,8 +269,9 @@
 
 const express = require("express");
 const router = express.Router();
-const { Roles, LevelHierarchy } = require("../models");
-
+const { Roles, UserRoles, LevelHierarchy } = require("../models");
+const authenticateToken = require("../middlewaare/auth");
+const { Op } = require("sequelize");
 /**
  * @swagger
  * /roles/create-role:
@@ -391,26 +392,32 @@ const { Roles, LevelHierarchy } = require("../models");
 // module.exports = router;
 
 
-    router.post("/create-role", async (req, res) => {
+    router.post("/create-role", authenticateToken, async (req, res) => {
         try {
+            const loggedInUserId = req.user.id;
             console.log("🔥 Incoming Request Body:", req.body);
-            const { role_name, description, level_code, permissions, parent_role_id, created_by } = req.body;
+            const { role_name, description, level_code, permissions} = req.body;
 
+            const userRoleid = await UserRoles.findOne({
+                where: { user_id: loggedInUserId },
+                include: [{ model: Roles, as: "role" }]
+            });
 
+            console.log("this is to test", userRoleid.role.id);
 
             // ✅ Simulate Chidhagni (If No User Found)
-            const user = req.user || {
-                id: "0000-1111-2222-3333", // Dummy Chidhagni ID
-                level_name: "Level 0", // Chidhagni Level
-                role_name: "Chidhagni" // Chidhagni Role
+            // const user = req.user || {
+            //     id: "0000-1111-2222-3333", // Dummy Chidhagni ID
+            //     level_name: "Level 0", // Chidhagni Level
+            //     role_name: "Chidhagni" // Chidhagni Role
 
-            };
+            // };
 
-            console.log("User making request:", user);
+            // console.log("User making request:", user);
 
             // ✅ Fetch User's Role & Allowed Levels
             const userRole = await LevelHierarchy.findOne({
-                where: { level: user.level_name} // Either Logged-in user or Dummy Chidhagni
+                where: { level: userRoleid.role.level_name} // Either Logged-in user or Dummy Chidhagni
             });
             console.log("User 's Role:", userRole);
 
@@ -439,8 +446,8 @@ const { Roles, LevelHierarchy } = require("../models");
                 role_name,
                 description,
                 level_name : level_code, // ✅ Stores level but no FK
-                created_by: created_by || user.id, // ✅ Use real or dummy ID
-                parent_role_id,
+                created_by: loggedInUserId ,
+                parent_role_id : userRoleid.role.id,
                 permissions
             });
 
@@ -489,15 +496,71 @@ const { Roles, LevelHierarchy } = require("../models");
  *         description: Server error
  */
 
-router.get("/", async (req, res) => {
+// router.get("/", async (req, res) => {
+//     try {
+//         // 🔍 Fetch all roles from the database
+//         const roles = await Roles.findAll({
+//             attributes: ["id", "role_name", "description", "level_name", "permissions"],
+//             include: [
+//                 {
+//                     model: Roles,
+//                     as: "ParentRole",
+//                     attributes: ["id", "role_name"]
+//                 }]
+//         });
+
+//         // ✅ Return the roles as JSON
+//         res.status(200).json(roles);
+//     } catch (error) {
+//         console.error("❌ Error fetching roles:", error);
+//         res.status(500).json({ message: "Server error", error: error.message });
+//     }
+// });
+router.get("/", authenticateToken, async (req, res) => {
     try {
-        // 🔍 Fetch all roles from the database
-        const roles = await Roles.findAll({
-            attributes: ["id", "role_name", "description", "level_name", "permissions"]
+        const loggedInUserId = req.user.id;
+
+        // Fetch User Role
+        const userRole = await UserRoles.findOne({
+            where: { user_id: loggedInUserId },
+            include: [{ model: Roles, as: "role" }]
         });
 
-        // ✅ Return the roles as JSON
+        if (!userRole) {
+            return res.status(403).json({ message: "User role not found." });
+        }
+
+        let rolesQuery = {};
+
+        if (userRole.role.level_name === "Level 0") {
+            // Chidhagni sees all roles
+            console.log("✅ Chidhagni Access: Fetching all roles...");
+            rolesQuery = {};
+        } else if (userRole.role.level_name === "Level 1") {
+            // Super Admin sees their created users and admins under their parent_role_id
+            console.log("✅ Super Admin Access: Fetching roles created by this user...");
+            rolesQuery = {
+                [Op.or]: [
+                    { created_by: loggedInUserId },
+                    { parent_role_id: userRole.role.id }
+                ]
+            };
+        } else {
+            console.log("❌ Access Denied: User does not have permission to view roles.");
+            return res.status(403).json({ message: "You do not have permission to view these roles." });
+        }
+
+        const roles = await Roles.findAll({
+            where: rolesQuery,
+            include: [{
+                model: Roles,
+                as: "ParentRole",
+                attributes: ["id", "role_name"]
+            }]
+        });
+
         res.status(200).json(roles);
+
     } catch (error) {
         console.error("❌ Error fetching roles:", error);
         res.status(500).json({ message: "Server error", error: error.message });
