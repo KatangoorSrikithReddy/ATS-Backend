@@ -247,55 +247,141 @@ router.post("/create-user", authenticateToken, async (req, res) => {
  *         description: Internal server error
  */
 
+// router.post("/login", async (req, res) => {
+//     const { username, password } = req.body;
+  
+//     try {
+//       console.log("🔍 Login Attempt:", username, password);
+  
+//       // Fetch user by email (username in request is actually the email)
+//       const user = await Individuals.findOne({
+//         where: { email: username },
+//         attributes: ["id", "first_name", "last_name", "password"]
+//       });
+  
+//       // Debugging output to check if user exists
+//       console.log("👤 Retrieved User:", user);
+//       console.log("👤 Retrieved Password:", user.password);
+  
+  
+//       // If user not found OR hashedPassword is missing, return unauthorized
+//       if (!user || !user.password) {
+//         console.error("❌ Login Failed: User not found or password missing");
+//         return res.status(401).json({ message: "Invalid credentials" });
+//     }
+
+//     // ✅ Compare hashed password
+//         const isMatch = bcrypt.compareSync(password, user.password); // ✅ Correct column name
+//         if (!isMatch) {
+//             console.error("❌ Login Failed: Incorrect password", isMatch);
+//             return res.status(401).json({ message: "Invalid credentials" });
+//         }
+  
+//       // Generate full name by concatenating firstName and lastName
+//       const fullName = `${user.first_name} ${user.last_name}`;
+  
+//       // Generate JWT token
+//       const token = jwt.sign(
+//         { id: user.id, fullName }, // Include fullName in token
+//         SECRET_KEY,
+//         { expiresIn: "60m" }
+//       );
+  
+//       console.log("✅ Login Successful for:", fullName);
+  
+//       // Send the token back to the client
+//       res.status(200).json({ access_token: token, token_type: "bearer" });
+//     } catch (error) {
+//       console.error("❌ Login Error:", error);
+//       res.status(500).json({ error: "Something went wrong" });
+//     }
+//   });
+
+
+
 router.post("/login", async (req, res) => {
     const { username, password } = req.body;
   
     try {
-      console.log("🔍 Login Attempt:", username, password);
+        console.log("🔍 Login Attempt:", username, password);
   
-      // Fetch user by email (username in request is actually the email)
-      const user = await Individuals.findOne({
-        where: { email: username },
-        attributes: ["id", "first_name", "last_name", "password"]
-      });
+        // 🔑 Fetch user by email
+        const user = await Individuals.findOne({
+            where: { email: username },
+            attributes: ["id", "first_name", "last_name", "password"]
+        });
   
-      // Debugging output to check if user exists
-      console.log("👤 Retrieved User:", user);
-      console.log("👤 Retrieved Password:", user.password);
-  
-  
-      // If user not found OR hashedPassword is missing, return unauthorized
-      if (!user || !user.password) {
-        console.error("❌ Login Failed: User not found or password missing");
-        return res.status(401).json({ message: "Invalid credentials" });
-    }
+        if (!user || !user.password) {
+            console.error("❌ Login Failed: User not found or password missing");
+            return res.status(401).json({ message: "Invalid credentials" });
+        }
 
-    // ✅ Compare hashed password
-        const isMatch = bcrypt.compareSync(password, user.password); // ✅ Correct column name
+        // 🔑 Compare hashed password
+        const isMatch = bcrypt.compareSync(password, user.password);
         if (!isMatch) {
-            console.error("❌ Login Failed: Incorrect password", isMatch);
+            console.error("❌ Login Failed: Incorrect password");
             return res.status(401).json({ message: "Invalid credentials" });
         }
   
-      // Generate full name by concatenating firstName and lastName
-      const fullName = `${user.first_name} ${user.last_name}`;
-  
-      // Generate JWT token
-      const token = jwt.sign(
-        { id: user.id, fullName }, // Include fullName in token
-        SECRET_KEY,
-        { expiresIn: "60m" }
-      );
-  
-      console.log("✅ Login Successful for:", fullName);
-  
-      // Send the token back to the client
-      res.status(200).json({ access_token: token, token_type: "bearer" });
+        // 🔍 Fetch roles and permissions from UserRoles
+        const userRoles = await UserRoles.findAll({
+            where: { user_id: user.id },
+            include: [
+                {
+                    model: Roles,
+                    as: "role",  // Ensure alias matches your Sequelize association
+                    attributes: ["id", "role_name", "level_name", "permissions"]
+                }
+            ]
+        });
+
+        console.log("🎯 Retrieved User Roles:", userRoles);
+
+        // 📝 Format roles and permissions
+        const roles = userRoles.map(userRole => ({
+            // role_id: userRole.role.id,
+            // role_name: userRole.role.role_name,
+            level_name: userRole.role.level_name,
+            permissions: userRole.role.permissions || []
+        }));
+
+        // 🔑 Generate JWT token
+        const token = jwt.sign(
+            { id: user.id, roles },
+            SECRET_KEY,
+            { expiresIn: "60m" }
+        );
+
+        console.log("✅ Login Successful for:", user.first_name);
+
+        // 📤 Send response with user and roles
+        res.status(200).json({
+            access_token: token,
+            token_type: "bearer",
+            user: {
+                id: user.id,
+                full_name: `${user.first_name} ${user.last_name}`,
+
+                roles: roles
+            }
+        });
+
     } catch (error) {
-      console.error("❌ Login Error:", error);
-      res.status(500).json({ error: "Something went wrong" });
+        console.error("❌ Login Error:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
     }
-  });
+});
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -346,32 +432,449 @@ router.post("/login", async (req, res) => {
  *         description: Server error.
  */
 
-router.get("/get-users-with-roles", async (req, res) => {
-    console.log("🔥 Fetching Users with Roles");
+// router.get("/get-users-with-roles", async (req, res) => {
+//     console.log("🔥 Fetching Users with Roles");
 
+//     try {
+//         const userRoles = await UserRoles.findAll({
+//             include: [
+//                 {
+//                     model: Individuals,
+//                     as: 'user',  // This is the alias used in the association
+//                     attributes: ['id', 'username', 'email', 'first_name', 'last_name'],  // Add the fields you need
+//                 },
+//                 {
+//                     model: Roles,
+//                     as: 'role',  // This is the alias used in the association
+//                     attributes: ['id', 'role_name'],  // Add the fields you need
+//                 }
+//             ]
+//         });
+
+//         // Send the user roles as the response
+//         res.json(userRoles);
+//     } catch (error) {
+//         console.error('Error fetching user roles:', error);
+//         res.status(500).json({ error: 'Failed to fetch user roles' });
+//     }
+// });
+
+router.get("/get-users-with-roles", authenticateToken, async (req, res) => {
     try {
-        const userRoles = await UserRoles.findAll({
+        const loggedInUserId = req.user.id;// The ID of the logged-in user
+
+        // Fetch the role details of the logged-in user
+        const userRole = await UserRoles.findOne({
+            where: { user_id: loggedInUserId },
             include: [
                 {
-                    model: Individuals,
-                    as: 'user',  // This is the alias used in the association
-                    attributes: ['id', 'username', 'email', 'first_name', 'last_name'],  // Add the fields you need
-                },
-                {
                     model: Roles,
-                    as: 'role',  // This is the alias used in the association
-                    attributes: ['id', 'role_name'],  // Add the fields you need
+                    as: "role",
+                    attributes: ["id", "role_name", "level_name", "parent_role_id"]
                 }
             ]
         });
 
-        // Send the user roles as the response
-        res.json(userRoles);
+        if (!userRole || !userRole.role) {
+            return res.status(403).json({ error: "User role not found!" });
+        }
+
+        const userRoleId = userRole.role.id;
+        const userLevel = userRole.role.level_name;
+        let usersQuery = {};
+
+        console.log(`🔍 Fetching users for role: ${userRole.role.role_name} (Level: ${userLevel})`);
+
+        // **Step 1: Find all roles that are under the current user's role**
+        const getSubRoles = async (roleId) => {
+            const subRoles = await Roles.findAll({
+                where: { parent_role_id: roleId },
+                attributes: ["id"]
+            });
+            return subRoles.map(role => role.id);
+        };
+
+        // **Step 2: Dynamically determine access rules**
+        if (userLevel === "Level 0") { 
+            // **Top-most level can see everything**
+            console.log("🔓 Level 0 detected (Full access)");
+            usersQuery = {
+                user_id: { [Op.ne]: loggedInUserId }, // Exclude the logged-in Level 0 user
+                role_id: {
+                    [Op.notIn]: await Roles.findAll({
+                        where: { level_name: "Level 0" },
+                        attributes: ["id"]
+                    }).then(roles => roles.map(role => role.id)) // Exclude all Level 0 users
+                }
+            };
+            
+        } else {
+            // **Fetch all child roles under the current role**
+            const subRoleIds = await getSubRoles(userRoleId);
+
+            usersQuery = {
+                [Op.or]: [
+                    { created_by: loggedInUserId }, // Users created by this user
+                    { role_id: { [Op.in]: subRoleIds } } // Users in roles under them
+                ]
+            };
+        }
+
+        // **Step 3: Fetch Users with the filtered query**
+        const usersWithRoles = await UserRoles.findAll({
+            where: usersQuery,
+            include: [
+                {
+                    model: Individuals,
+                    as: "user",
+                    attributes: ["id", "username", "email", "first_name", "last_name"]
+                },
+                {
+                    model: Roles,
+                    as: "role",
+                    attributes: ["id", "role_name", "level_name", "parent_role_id", "permissions"],
+                    include: [
+                        {
+                            model: Roles,
+                            as: "ParentRole",  // ✅ Fetch Parent Role (Self-reference)
+                            attributes: ["id", "role_name"]  // ✅ Only fetch required fields
+                        }
+                    ]
+                }
+            ]
+        });
+
+        console.log(`✅ Found ${usersWithRoles.length} users`);
+        res.json(usersWithRoles);
     } catch (error) {
-        console.error('Error fetching user roles:', error);
-        res.status(500).json({ error: 'Failed to fetch user roles' });
+        console.error("❌ Error fetching users:", error);
+        res.status(500).json({ error: "Failed to fetch users" });
     }
 });
+
+
+
+/**
+ * @swagger
+ * /individualsRoles/update-user/{id}:
+ *   put:
+ *     summary: Update user details except password and email
+ *     description: This endpoint updates a user's details while preventing changes to email and password.
+ *     tags:
+ *       - Individuals and Roles
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The ID of the user to update.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - first_name
+ *               - last_name
+ *               - role_id
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 example: "john_doe_updated"
+ *               first_name:
+ *                 type: string
+ *                 example: "John"
+ *               last_name:
+ *                 type: string
+ *                 example: "Doe"
+ *               role_id:
+ *                 type: string
+ *                 format: uuid
+ *                 example: "d9b2d63d-a233-4123-847e-145d42a2318b"
+ *     responses:
+ *       200:
+ *         description: User updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "User updated successfully."
+ *       400:
+ *         description: Invalid request data
+ *       403:
+ *         description: Permission denied
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+// router.put("/update-user/:id", authenticateToken, async (req, res) => {
+//     try {
+//         const { id } = req.params; // This is the UserRoles ID
+//         const { username, first_name, last_name, role_id } = req.body;
+//         const updated_by = req.user.id; // Logged-in user's ID
+
+//         console.log(`🔹 Incoming User Update Request for UserRoles ID: ${id}`, req.body);
+        
+//         // 🔍 **Step 1: Check if UserRoles Exists**
+//         const userRole = await UserRoles.findOne({
+//             where: { id },
+//             include: [
+//                 {
+//                     model: Individuals,
+//                     as: "user",
+//                     attributes: ["id", "username", "email", "first_name", "last_name"]
+//                 },
+//                 {
+//                     model: Roles,
+//                     as: "role",
+//                     attributes: ["id", "role_name", "level_name", "parent_role_id"]
+//                 }
+//             ]
+//         });
+
+//         if (!userRole) {
+//             console.log("🚨 UserRoles entry not found.");
+//             return res.status(404).json({ message: "User role record not found." });
+//         }
+
+//         const user_id = userRole.user?.id; // Get user_id from Individuals
+//         console.log("✅ Extracted User ID:", user_id);
+
+//         if (!user_id) {
+//             console.log("🚨 User ID not found in Individuals.");
+//             return res.status(404).json({ message: "User record not found." });
+//         }
+
+//         console.log("✅ User exists. Proceeding with role validation...");
+
+//         // 🔍 **Step 2: Validate Role**
+//         const roleData = await Roles.findOne({
+//             where: { id: role_id },
+//             attributes: ["level_name"]
+//         });
+
+//         if (!roleData) {
+//             console.log("🚨 Invalid Role ID. Role not found.");
+//             return res.status(400).json({ message: "Invalid role ID." });
+//         }
+
+//         console.log(`✅ Role Level of Requested Role: ${roleData.level_name}`);
+
+//         // 🔍 **Step 3: Fetch the logged-in user's role level from `UserRoles`**
+//         const loggedInUserRole = await UserRoles.findOne({
+//             where: { user_id: updated_by },
+//             include: [
+//                 {
+//                     model: Roles,
+//                     as: "role",
+//                     attributes: ["id", "role_name", "level_name"]
+//                 }
+//             ]
+//         });
+
+//         if (!loggedInUserRole) {
+//             console.log("🚨 Logged-in user's role not found.");
+//             return res.status(403).json({ message: "Logged-in user's role not found." });
+//         }
+
+//         console.log("Logged-in User Role:", loggedInUserRole.role.level_name);
+
+//         const userRoles = await LevelHierarchy.findOne({
+//             where: { level: loggedInUserRole.role.level_name }
+//         });
+
+//         if (!userRoles) {
+//             return res.status(403).json({ message: "User level not found." });
+//         }
+
+//         const allowedLevels = Array.isArray(userRoles.can_create) ? userRoles.can_create : [];
+//         console.log("🚀 Allowed Levels:", allowedLevels.map(level => level.toLowerCase()));
+
+//         const isAllowed = allowedLevels.map(level => level.toLowerCase()).includes(roleData.level_name.toLowerCase());
+//         console.log("✅ Permission Check:", isAllowed);
+
+//         if (!isAllowed) {
+//             console.log("🚨 Permission Denied: You cannot update this role level.");
+//             return res.status(403).json({ message: "You do not have permission to update this role level." });
+//         }
+
+//         // 🔍 **Step 4: Update User Details in `Individuals`**
+//         console.log("🛠️ Updating user details...");
+//         const [updatedCount] = await Individuals.update(
+//             { username, first_name, last_name },
+//             { where: { id: user_id } }
+//         );
+
+//         if (updatedCount === 0) {
+//             console.log("⚠️ No changes made. Data might be identical.");
+//             return res.status(400).json({ message: "No changes made." });
+//         }
+
+//         console.log("✅ User details updated successfully.");
+
+//         // 🔗 **Step 5: Update User Role in `UserRoles`**
+//         console.log("🔗 Updating user role...");
+//         await UserRoles.update(
+//             { role_id, updated_by },
+//             { where: { id } }
+//         );
+
+//         console.log("✅ Role updated successfully!");
+
+//         // 🔍 **Step 6: Fetch and return updated user details**
+//         const updatedUser = await Individuals.findOne({ where: { id: user_id } });
+
+//         res.status(200).json({ message: "User updated successfully.", updatedUser });
+//     } catch (error) {
+//         console.error("❌ Error updating user:", error);
+//         res.status(500).json({ message: "Server error", error: error.message });
+//     }
+// });
+
+router.put("/update-user/:id", authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params; // This is the UserRoles ID
+        const { username, first_name, last_name, role_id } = req.body;
+        const updated_by = req.user.id; // Logged-in user's ID
+
+        console.log(`🔹 Incoming User Update Request for UserRoles ID: ${id}`, req.body);
+        
+        // 🔍 **Step 1: Check if UserRoles Exists**
+        const userRole = await UserRoles.findOne({
+            where: { id },
+            include: [
+                {
+                    model: Individuals,
+                    as: "user",
+                    attributes: ["id", "username", "email", "first_name", "last_name"]
+                },
+                {
+                    model: Roles,
+                    as: "role",
+                    attributes: ["id", "role_name", "level_name", "parent_role_id"]
+                }
+            ]
+        });
+
+        if (!userRole) {
+            console.log("🚨 UserRoles entry not found.");
+            return res.status(404).json({ message: "User role record not found." });
+        }
+
+        const user_id = userRole.user?.id; // Get user_id from Individuals
+        console.log("✅ Extracted User ID:", user_id);
+
+        if (!user_id) {
+            console.log("🚨 User ID not found in Individuals.");
+            return res.status(404).json({ message: "User record not found." });
+        }
+
+        console.log("✅ User exists. Proceeding with role validation...");
+
+        // 🔍 **Step 2: Validate Role**
+        const roleData = await Roles.findOne({
+            where: { id: role_id },
+            attributes: ["level_name"]
+        });
+
+        if (!roleData) {
+            console.log("🚨 Invalid Role ID. Role not found.");
+            return res.status(400).json({ message: "Invalid role ID." });
+        }
+
+        console.log(`✅ Role Level of Requested Role: ${roleData.level_name}`);
+
+        // 🔍 **Step 3: Fetch the logged-in user's role level from `UserRoles`**
+        const loggedInUserRole = await UserRoles.findOne({
+            where: { user_id: updated_by },
+            include: [
+                {
+                    model: Roles,
+                    as: "role",
+                    attributes: ["id", "role_name", "level_name"]
+                }
+            ]
+        });
+
+        if (!loggedInUserRole) {
+            console.log("🚨 Logged-in user's role not found.");
+            return res.status(403).json({ message: "Logged-in user's role not found." });
+        }
+
+        console.log("Logged-in User Role:", loggedInUserRole.role.level_name);
+
+        const userRoles = await LevelHierarchy.findOne({
+            where: { level: loggedInUserRole.role.level_name }
+        });
+
+        if (!userRoles) {
+            return res.status(403).json({ message: "User level not found." });
+        }
+
+        const allowedLevels = Array.isArray(userRoles.can_create) ? userRoles.can_create : [];
+        console.log("🚀 Allowed Levels:", allowedLevels.map(level => level.toLowerCase()));
+
+        const isAllowed = allowedLevels.map(level => level.toLowerCase()).includes(roleData.level_name.toLowerCase());
+        console.log("✅ Permission Check:", isAllowed);
+
+        if (!isAllowed) {
+            console.log("🚨 Permission Denied: You cannot update this role level.");
+            return res.status(403).json({ message: "You do not have permission to update this role level." });
+        }
+
+        // 🔍 **Step 4: Update User Details in `Individuals`**
+        console.log("🛠️ Updating user details...");
+        const [individualUpdatedCount] = await Individuals.update(
+            { username, first_name, last_name },
+            { where: { id: user_id } }
+        );
+
+        console.log(`✅ Individuals Updated: ${individualUpdatedCount > 0}`);
+
+        // 🔗 **Step 5: Update User Role in `UserRoles`**
+        console.log("🔗 Updating user role...");
+        const [roleUpdatedCount] = await UserRoles.update(
+            { role_id, updated_by },
+            { where: { id } }
+        );
+
+        console.log(`✅ Role Updated: ${roleUpdatedCount > 0}`);
+
+        if (individualUpdatedCount === 0 && roleUpdatedCount === 0) {
+            console.log("⚠️ No changes made in Individuals or UserRoles.");
+            return res.status(400).json({ message: "No changes made." });
+        }
+
+        // 🔍 **Step 6: Fetch and return updated user details**
+        const updatedUser = await Individuals.findOne({ where: { id: user_id } });
+
+        res.status(200).json({ 
+            message: "User updated successfully.", 
+            updatedUser,
+            changes: {
+                individualUpdated: individualUpdatedCount > 0,
+                roleUpdated: roleUpdatedCount > 0
+            }
+        });
+
+    } catch (error) {
+        console.error("❌ Error updating user:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+});
+
+
+
 
 
 

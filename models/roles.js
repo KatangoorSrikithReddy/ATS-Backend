@@ -20,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
         },
         is_active: {
             type: DataTypes.BOOLEAN,
-            defaultValue: true,  // ✅ Set default value to true
+            defaultValue: true,  // ✅ Set default vaalue to true
             allowNull: false
         },
         parent_role_id: {
