@@ -1,276 +1,8 @@
-// const express = require("express");
-// const { Roles } = require("../models");
-// const authenticateToken = require('../middlewaare/auth');
-
-
-// const router = express.Router();
-
-// /**
-//  * @swagger
-//  * /roles:
-//  *   post:
-//  *     summary: Create a new role (Admin, Super Admin, or any other role)
-//  *     tags: [Roles]
-//  *     security:
-//  *       - bearerAuth: []
-//  *     requestBody:
-//  *       required: true
-//  *       content:
-//  *         application/json:
-//  *           schema:
-//  *             type: object
-//  *             required:
-//  *               - name
-//  *               - created_by
-//  *             properties:
-//  *               name:
-//  *                 type: string
-//  *                 example: "Admin"
-//  *               description:
-//  *                 type: string
-//  *                 example: "Administrator role with assigned permissions"
-//  *               parent_role_name:
-//  *                 type: string
-//  *                 example: "Super Admin"
-//  *               is_active:
-//  *                 type: boolean
-//  *                 example: true
-//  *               permissions:
-//  *                 type: object
-//  *                 example: { "can_create": true, "can_update": true, "can_delete": true }
-//  *     responses:
-//  *       201:
-//  *         description: Role created successfully
-//  *       400:
-//  *         description: Validation error
-//  *       500:
-//  *         description: Server error
-//  */
-// router.post("/", authenticateToken, async (req, res) => {
-//     try {
-//         const { name, description, parent_role_name, is_active, permissions } = req.body;
-//         const created_by = req.user.id;
-
-//         if (!name || !created_by) {
-//             return res.status(400).json({ error: "Name and Created By are required" });
-//         }
-
-//         // ✅ Check if Role Already Exists
-//         let existingRole = await Roles.findOne({ where: { name } });
-//         if (existingRole) {
-//             return res.status(400).json({ error: `Role ${name} already exists!` });
-//         }
-
-//         let parent_role_id = null;
-
-//         // ✅ If parent_role_name exists, fetch its ID
-//         if (parent_role_name) {
-//             const parentRole = await Roles.findOne({ where: { name: parent_role_name } });
-//             if (!parentRole) {
-//                 return res.status(400).json({ error: `Parent role '${parent_role_name}' not found!` });
-//             }
-//             parent_role_id = parentRole.id;
-//         }
-
-//         // ✅ Create New Role
-//         const newRole = await Roles.create({
-//             id: require("uuid").v4(),
-//             name,
-//             description,
-//             parent_role_id,
-//             is_active: is_active !== undefined ? is_active : true,
-//             created_by,
-//             permissions: permissions // Convert JSON to String
-//         });
-
-//         res.status(201).json({ message: "Role created successfully", role: newRole });
-//     } catch (error) {
-//         console.error("Error creating role:", error);
-//         res.status(500).json({ message: "Error creating role", error: error.message });
-//     }
-// });
-
-
-// /**
-//  * @swagger
-//  * /roles:
-//  *   get:
-//  *     summary: Get all roles
-//  *     tags: [Roles]
-//  *     security:
-//  *       - bearerAuth: []
-//  *     responses:
-//  *       200:
-//  *         description: List of roles
-//  *       500:
-//  *         description: Server error
-//  */
-// router.get("/", authenticateToken, async (req, res) => {
-//     try {
-//         const roles = await Roles.findAll({
-//             include: [
-//                 {
-//                     model: Roles, // Self-referencing association
-//                     as: "ParentRole", 
-//                     attributes: ["id", "name"] // Fetch only required fields
-//                 }
-//             ]
-//         });
-
-//         res.status(200).json(roles);
-//     } catch (error) {
-//         console.error("Error fetching roles:", error);
-//         res.status(500).json({ error: "Error fetching roles" });
-//     }
-// });
-
-
-// /**
-//  * @swagger
-//  * /roles/{id}:
-//  *   get:
-//  *     summary: Get a specific role by ID
-//  *     tags: [Roles]
-//  *     security:
-//  *       - bearerAuth: []
-//  *     parameters:
-//  *       - in: path
-//  *         name: id
-//  *         required: true
-//  *         schema:
-//  *           type: string
-//  *         description: The role ID
-//  *     responses:
-//  *       200:
-//  *         description: Role details
-//  *       404:
-//  *         description: Role not found
-//  */
-// router.get("/:id", authenticateToken, async (req, res) => {
-//     console.log("🔹 Incoming Request for Role ID:", req.params.id);
-//     console.log("🔹 User making request:", req.user);  // Should log user details if authenticated
-//     try {
-//         const role = await Roles.findByPk(req.params.id);
-//         if (!role) {
-//             return res.status(404).json({ error: "Role not found" });
-//         }
-//         res.status(200).json({ role });
-//     } catch (error) {
-//         console.error("Error fetching role:", error);
-//         res.status(500).json({ message: "Error fetching role", error: error.message });
-//     }
-// });
-
-// /**
-//  * @swagger
-//  * /roles/{id}:
-//  *   put:
-//  *     summary: Update a role by ID
-//  *     tags: [Roles]
-//  *     security:
-//  *       - bearerAuth: []
-//  *     parameters:
-//  *       - in: path
-//  *         name: id
-//  *         required: true
-//  *         schema:
-//  *           type: string
-//  *         description: The role ID
-//  *     requestBody:
-//  *       required: true
-//  *       content:
-//  *         application/json:
-//  *           schema:
-//  *             type: object
-//  *             properties:
-//  *               name:
-//  *                 type: string
-//  *               description:
-//  *                 type: string
-//  *               is_active:
-//  *                 type: boolean
-//  *               permissions:
-//  *                 type: object
-//  *     responses:
-//  *       200:
-//  *         description: Role updated successfully
-//  *       404:
-//  *         description: Role not found
-//  */
-// router.put("/:id", authenticateToken, async (req, res) => {
-//     try {
-//         const { name, description, is_active, permissions } = req.body;
-//         const updated_by = req.user.id;
-
-//         const role = await Roles.findByPk(req.params.id);
-//         if (!role) {
-//             return res.status(404).json({ error: "Role not found" });
-//         }
-
-//         // ✅ Update role
-//         await role.update({
-//             name,
-//             description,
-//             is_active,
-//             updated_by,
-//             permissions // ✅ Update JSONB field directly
-//         });
-
-//         res.status(200).json({ message: "Role updated successfully", role });
-//     } catch (error) {
-//         console.error("Error updating role:", error);
-//         res.status(500).json({ message: "Error updating role", error: error.message });
-//     }
-// });
-
-// /**
-//  * @swagger
-//  * /roles/{id}:
-//  *   delete:
-//  *     summary: Delete a role by ID
-//  *     tags: [Roles]
-//  *     security:
-//  *       - bearerAuth: []
-//  *     parameters:
-//  *       - in: path
-//  *         name: id
-//  *         required: true
-//  *         schema:
-//  *           type: string
-//  *         description: The role ID
-//  *     responses:
-//  *       200:
-//  *         description: Role deleted successfully
-//  *       404:
-//  *         description: Role not found
-//  */
-// router.delete("/:id", authenticateToken, async (req, res) => {
-//     try {
-//         const role = await Roles.findByPk(req.params.id);
-//         if (!role) {
-//             return res.status(404).json({ error: "Role not found" });
-//         }
-
-//         await role.destroy();
-//         res.status(200).json({ message: "Role deleted successfully" });
-//     } catch (error) {
-//         console.error("Error deleting role:", error);
-//         res.status(500).json({ message: "Error deleting role", error: error.message });
-//     }
-// });
-
-
-
-
-
-
-
-// module.exports = router;
-
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const { Roles, LevelHierarchy } = require("../models");
-
+const { Roles, UserRoles, LevelHierarchy } = require("../models");
+const authenticateToken = require("../middlewaare/auth");
+const { Op } = require("sequelize");
 /**
  * @swagger
  * /roles/create-role:
@@ -391,26 +123,23 @@ const { Roles, LevelHierarchy } = require("../models");
 // module.exports = router;
 
 
-    router.post("/create-role", async (req, res) => {
+    router.post("/create-role", authenticateToken, async (req, res) => {
         try {
+            const loggedInUserId = req.user.id;
             console.log("🔥 Incoming Request Body:", req.body);
-            const { role_name, description, level_code, permissions, parent_role_id, created_by } = req.body;
+            // const { role_name, description, level_code, permissions} = req.body;
+            const { role_name, description, level_code, permissions, parent_role_id } = req.body;
 
+            const userRoleid = await UserRoles.findOne({
+                where: { user_id: loggedInUserId },
+                include: [{ model: Roles, as: "role" }]
+            });
 
+            console.log("this is to test", userRoleid.role.id);
 
-            // ✅ Simulate Chidhagni (If No User Found)
-            const user = req.user || {
-                id: "0000-1111-2222-3333", // Dummy Chidhagni ID
-                level_name: "Level 0", // Chidhagni Level
-                role_name: "Chidhagni" // Chidhagni Role
-
-            };
-
-            console.log("User making request:", user);
-
-            // ✅ Fetch User's Role & Allowed Levels
+       
             const userRole = await LevelHierarchy.findOne({
-                where: { level: user.level_name} // Either Logged-in user or Dummy Chidhagni
+                where: { level: userRoleid.role.level_name} // Either Logged-in user or Dummy Chidhagni
             });
             console.log("User 's Role:", userRole);
 
@@ -434,13 +163,37 @@ const { Roles, LevelHierarchy } = require("../models");
             }
 
             // ✅ Create New Role
+            // const newRole = await Roles.create({
+            //     id: require("uuid").v4(),
+            //     role_name,
+            //     description,
+            //     level_name : level_code, // ✅ Stores level but no FK
+            //     created_by: loggedInUserId ,
+            //     parent_role_id : userRoleid.role.id,
+            //     permissions
+            // });
+            // const finalParentRoleId = userRoleid.role.level_name === "Level 0" ? parent_role_id : userRoleid.role.id;
+            // console.log("🆕 Parent Role ID Assigned:", finalParentRoleId);
+            const finalParentRoleId = 
+            userRoleid.role.level_name === "Level 0" 
+            ? (parent_role_id ?? userRoleid.role.id) // If parent_role_id is null, use userRoleid.role.id
+            : userRoleid.role.id;
+
+        console.log("🆕 Parent Role ID Assigned:", finalParentRoleId);
+
+            console.log("🔍 Role Level Name:", userRoleid.role.level_name);
+console.log("🔍 Parent Role ID (Before):", parent_role_id);
+console.log("🔍 User Role ID:", userRoleid.role.id);
+console.log("🆕 Parent Role ID Assigned:", finalParentRoleId);
+
+            // ✅ Create New Role
             const newRole = await Roles.create({
                 id: require("uuid").v4(),
                 role_name,
                 description,
-                level_name : level_code, // ✅ Stores level but no FK
-                created_by: created_by || user.id, // ✅ Use real or dummy ID
-                parent_role_id,
+                level_name: level_code, 
+                created_by: loggedInUserId,
+                parent_role_id: finalParentRoleId,
                 permissions
             });
 
@@ -489,15 +242,139 @@ const { Roles, LevelHierarchy } = require("../models");
  *         description: Server error
  */
 
-router.get("/", async (req, res) => {
+// router.get("/", async (req, res) => {
+//     try {
+//         // 🔍 Fetch all roles from the database
+//         const roles = await Roles.findAll({
+//             attributes: ["id", "role_name", "description", "level_name", "permissions"],
+//             include: [
+//                 {
+//                     model: Roles,
+//                     as: "ParentRole",
+//                     attributes: ["id", "role_name"]
+//                 }]
+//         });
+
+//         // ✅ Return the roles as JSON
+//         res.status(200).json(roles);
+//     } catch (error) {
+//         console.error("❌ Error fetching roles:", error);
+//         res.status(500).json({ message: "Server error", error: error.message });
+//     }
+// });
+// router.get("/", authenticateToken, async (req, res) => {
+//     try {
+//         const loggedInUserId = req.user.id;
+
+//         // Fetch User Role
+//         const userRole = await UserRoles.findOne({
+//             where: { user_id: loggedInUserId },
+//             include: [{ model: Roles, as: "role" }]
+//         });
+
+//         if (!userRole) {
+//             return res.status(403).json({ message: "User role not found." });
+//         }
+
+//         let rolesQuery = {};
+
+//         if (userRole.role.level_name === "Level 0") {
+//             // Chidhagni sees all roles
+//             console.log("✅ Chidhagni Access: Fetching all roles...");
+//             rolesQuery = {};
+//         } else if (userRole.role.level_name === "Level 1") {
+//             // Super Admin sees their created users and admins under their parent_role_id
+//             console.log("✅ Super Admin Access: Fetching roles created by this user...");
+//             rolesQuery = {
+//                 [Op.or]: [
+//                     { created_by: loggedInUserId },
+//                     { parent_role_id: userRole.role.id }
+//                 ]
+//             };
+//         } else {
+//             console.log("❌ Access Denied: User does not have permission to view roles.");
+//             return res.status(403).json({ message: "You do not have permission to view these roles." });
+//         }
+
+//         const roles = await Roles.findAll({
+//             where: rolesQuery,
+//             include: [{
+//                 model: Roles,
+//                 as: "ParentRole",
+//                 attributes: ["id", "role_name"]
+//             }]
+//         });
+
+//         res.status(200).json(roles);
+
+//     } catch (error) {
+//         console.error("❌ Error fetching roles:", error);
+//         res.status(500).json({ message: "Server error", error: error.message });
+//     }
+// });
+
+router.get("/", authenticateToken, async (req, res) => {
     try {
-        // 🔍 Fetch all roles from the database
+        const loggedInUserId = req.user.id;
+
+        // Fetch the user's role
+        const userRole = await UserRoles.findOne({
+            where: { user_id: loggedInUserId },
+            include: [{
+                model: Roles,
+                as: "role",
+                attributes: ["id", "role_name", "level_name", "parent_role_id", "is_active"] // Fields from `Roles`
+            }],
+            attributes: ["id", "role_id"] // Fetch `role_id` from `UserRoles`
+        });
+        
+        if (!userRole || !userRole.role) {
+            console.log("❌ User role not found.");
+        } else {
+            console.log(`
+            ✅ User Role Details:
+            -----------------------
+            UserRoles ID: ${userRole.id}
+            Role ID: ${userRole.role_id}  (Foreign Key)
+            Role Name: ${userRole.role.role_name}
+            Level Name: ${userRole.role.level_name}
+            Parent Role ID: ${userRole.role.parent_role_id}
+            Active: ${userRole.role.is_active}
+            `);
+        }
+        let rolesQuery = {};
+
+        if (userRole.role.level_name === "Level 0") {
+            // Chidhagni: Fetch all roles
+            console.log("✅ Chidhagni Access: Fetching all roles...");
+            rolesQuery = {
+                level_name: { [Op.ne]: "Level 0" } // Exclude all Level 0 roles
+            };
+        } else {
+            // Dynamically fetch roles based on the logged-in user's role
+            console.log(`✅ Fetching roles created by user ${loggedInUserId} or under their hierarchy...`);
+            rolesQuery = {
+                [Op.or]: [
+                    { created_by: loggedInUserId },  // Fetch roles created by this user
+                    { parent_role_id: userRole.role.id } // Fetch roles under this user's role
+                ]
+            };
+        }
+
+        // Fetch the roles
         const roles = await Roles.findAll({
-            attributes: ["id", "role_name", "description", "level_name", "permissions"]
+            where: rolesQuery,
+            include: [
+                {
+                    model: Roles,
+                    as: "ParentRole",
+                    attributes: ["id", "role_name"]
+                }
+            ]
         });
 
-        // ✅ Return the roles as JSON
         res.status(200).json(roles);
+
     } catch (error) {
         console.error("❌ Error fetching roles:", error);
         res.status(500).json({ message: "Server error", error: error.message });
@@ -619,29 +496,34 @@ router.get("/", async (req, res) => {
  *         description: Server error.
  */
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", authenticateToken, async (req, res) => {
     console.log("checking for update role");
     console.log("checking for update role"); // 🔍 Debugging Log
  
     try {
+        const loggedInUserId = req.user.id;
         const { id } = req.params;
         console.log("🔥 Incoming Role Update Request for ID:", id);
         console.log("📥 Request Body:", req.body);
         
-        const { role_name, description, level_code, permissions,updated_by } = req.body;
+        const { role_name, description, level_code, permissions,updated_by, parent_role_id } = req.body;
 
         // ✅ Simulate Chidhagni (If No User Found)
-        const user = req.user || {
-            id: "0000-1111-2222-3333", // Dummy Chidhagni ID
-            level_name: "Level 0", // Chidhagni Level
-            role_name: "Chidhagni" // Chidhagni Role
-        };
+        // const user = req.user || {
+        //     id: "0000-1111-2222-3333", // Dummy Chidhagni ID
+        //     level_name: "Level 0", // Chidhagni Level
+        //     role_name: "Chidhagni" // Chidhagni Role
+        // };
 
-        console.log("User making request:", user);
+        // console.log("User making request:", user);
+        const userRoleid = await UserRoles.findOne({
+            where: { user_id: loggedInUserId },
+            include: [{ model: Roles, as: "role" }]
+        });
 
         // ✅ Fetch User's Role & Allowed Levels
         const userRole = await LevelHierarchy.findOne({
-            where: { level: user.level_name } // Either Logged-in user or Dummy Chidhagni
+            where: { level: userRoleid.role.level_name } // Either Logged-in user or Dummy Chidhagni
         });
         console.log("🔍 User Role Data:", userRole);
 
@@ -662,10 +544,14 @@ router.put("/:id", async (req, res) => {
 
         // ✅ Check if Role Exists Before Updating
         const existingRole = await Roles.findOne({ where: { id } });
-
+        console.log("existing role ", existingRole.parent_role_id    )
+        
         if (!existingRole) {
             return res.status(404).json({ message: "Role not found." });
         }
+
+        const finalParentRoleId = parent_role_id || existingRole.parent_role_id;
+        console.log("🆕 Parent Role ID Assigned:", finalParentRoleId);
 
         // ✅ Update Role Data
         await Roles.update(
@@ -674,7 +560,7 @@ router.put("/:id", async (req, res) => {
                 description,
                 level_name: level_code, // ✅ Stores level but no FK
                 updated_by,
-             
+                parent_role_id: finalParentRoleId, // ✅ Ensure correct parent role is updated
                 permissions
             },
             { where: { id } }
@@ -780,6 +666,89 @@ router.delete("/delete-role/:id", async (req, res) => {
         return res.status(500).json({ message: "Server error", error: error.message });
     }
 });
+
+
+
+/**
+ * @swagger
+ * /roles/level1:
+ *   get:
+ *     summary: Retrieve all Level 1 roles
+ *     description: Fetches all roles with level_name as "Level 1".
+ *     security:
+ *       - bearerAuth: []
+ *     tags:
+ *       - Roles
+ *     responses:
+ *       200:
+ *         description: A list of Level 1 roles.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                     example: 2
+ *                   role_name:
+ *                     type: string
+ *                     example: "HR Management Super Admin"
+ *                   level_name:
+ *                     type: string
+ *                     example: "Level 1"
+ *                   parent_role_id:
+ *                     type: integer
+ *                     example: 1
+ *                   is_active:
+ *                     type: boolean
+ *                     example: true
+ *                   ParentRole:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         example: 1
+ *                       role_name:
+ *                         type: string
+ *                         example: "Chidhagni"
+ *       500:
+ *         description: Internal server error
+ */
+router.get("/level1", authenticateToken, async (req, res) => {
+    try {
+        console.log("🔍 Fetching Level 1 Roles...");
+
+        const level1Roles = await Roles.findAll({
+            where: { level_name: "Level 1" }, 
+            attributes: ["id", "role_name", "level_name", "parent_role_id", "is_active"],
+            include: [
+                {
+                    model: Roles,
+                    as: "ParentRole",
+                    attributes: ["id", "role_name"]
+                }
+            ]
+        });
+
+        console.log("✅ Level 1 Roles Retrieved:", level1Roles.map(role => ({
+            id: role.id,
+            role_name: role.role_name,
+            level_name: role.level_name,
+            parent_role_id: role.parent_role_id
+        })));
+
+        res.status(200).json(level1Roles);
+
+    } catch (error) {
+        console.error("❌ Error fetching Level 1 roles:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+});
+
+module.exports = router;
+
 
 
 

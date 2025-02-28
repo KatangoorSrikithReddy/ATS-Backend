@@ -18,11 +18,21 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING(50),
             allowNull: false
         },
-        parent_role_id: { // 👈 Self-referencing foreign key for hierarchy
+        is_active: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: true,  // ✅ Set default vaalue to true
+            allowNull: false
+        },
+        parent_role_id: {
             type: DataTypes.UUID,
             allowNull: true,
+            references: {
+                model: "Roles",  // ✅ Self-reference to Roles table
+                key: "id"
+            },
+            onDelete: "CASCADE", // Optional: Delete child roles if parent is deleted
+            onUpdate: "CASCADE"
         },
-
         created_on: {
             type: DataTypes.DATE,
             defaultValue: DataTypes.NOW

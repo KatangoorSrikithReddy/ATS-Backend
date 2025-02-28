@@ -51,6 +51,12 @@ db.UserRoles.belongsTo(db.Individuals, { foreignKey: "user_id", as: "user" });
 db.UserRoles.belongsTo(db.Roles, { foreignKey: "role_id", as: "role" });
 
 
+
+db.Roles.belongsTo(db.Roles, { foreignKey: "parent_role_id", as: "ParentRole" });
+db.Roles.hasMany(db.Roles, { foreignKey: "parent_role_id", as: "ChildRoles" });
+
+
+
 db.ClientPage.hasMany(db.Contact, {
 foreignKey: "client_id",  // Explicitly set the foreign key to client_id
 as: "contacts"            // Alias for referencing associated contacts
