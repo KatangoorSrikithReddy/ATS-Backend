@@ -299,70 +299,225 @@ router.post("/create-user", authenticateToken, async (req, res) => {
 
 
 
+// router.post("/login", async (req, res) => {
+//     const { username, password } = req.body;
+  
+//     try {
+//         console.log("🔍 Login Attempt:", username, password);
+  
+//         // 🔑 Fetch user by email
+//         const user = await Individuals.findOne({
+//             where: { email: username },
+//             attributes: ["id", "first_name", "last_name", "password"]
+//         });
+  
+//         if (!user || !user.password) {
+//             console.error("❌ Login Failed: User not found or password missing");
+//             return res.status(401).json({ message: "Invalid credentials" });
+//         }
+
+//         // 🔑 Compare hashed password
+//         const isMatch = bcrypt.compareSync(password, user.password);
+//         if (!isMatch) {
+//             console.error("❌ Login Failed: Incorrect password");
+//             return res.status(401).json({ message: "Invalid credentials" });
+//         }
+  
+//         // 🔍 Fetch roles and permissions from UserRoles
+//         const userRoles = await UserRoles.findAll({
+//             where: { user_id: user.id },
+//             include: [
+//                 {
+//                     model: Roles,
+//                     as: "role",  // Ensure alias matches your Sequelize association
+//                     attributes: ["id", "role_name", "level_name", "permissions"]
+//                 }
+//             ]
+//         });
+
+//         console.log("🎯 Retrieved User Roles:", userRoles);
+
+//         // 📝 Format roles and permissions
+//         const roles = userRoles.map(userRole => ({
+//             // role_id: userRole.role.id,
+//             // role_name: userRole.role.role_name,
+//             level_name: userRole.role.level_name,
+//             permissions: userRole.role.permissions || []
+//         }));
+
+//         // 🔑 Generate JWT token
+//         const token = jwt.sign(
+//             { id: user.id, roles },
+//             SECRET_KEY,
+//             { expiresIn: "60m" }
+//         );
+
+//         console.log("✅ Login Successful for:", user.first_name);
+
+//         // 📤 Send response with user and roles
+//         res.status(200).json({
+//             access_token: token,
+//             token_type: "bearer",
+//             user: {
+//                 id: user.id,
+//                 full_name: `${user.first_name} ${user.last_name}`,
+
+//                 roles: roles
+//             }
+//         });
+
+//     } catch (error) {
+//         console.error("❌ Login Error:", error);
+//         res.status(500).json({ message: "Server error", error: error.message });
+//     }
+// });
+
+
+// router.post("/login", async (req, res) => {
+//     const { username, password } = req.body;
+
+//     try {
+//         console.log("🔍 Login Attempt:", username);
+
+//         // 🔍 Step 1: Fetch User and Their Role using correct alias
+//         const userRole = await UserRoles.findOne({
+//             include: [
+//                 {
+//                     model: Individuals,
+//                     as: "user", // Use correct alias
+//                     attributes: ["id", "first_name", "last_name", "password"],
+//                     where: { email: username }, // Find user by email
+//                 },
+//                 {
+//                     model: Roles,
+//                     as: "role", // Ensure alias matches Sequelize association
+//                     attributes: ["id", "role_name", "level_name", "permissions"]
+//                 }
+//             ]
+//         });
+
+//         console.log("this credentials ", userRole)
+
+//         // ✅ Step 2: Check if User Exists & Role is Assigned
+//         if (!userRole || !userRole.individual) {
+//             console.error("❌ Login Failed: User not found or has no role assigned");
+//             return res.status(401).json({ message: "Invalid credentials" });
+//         }
+
+//         // 🆔 Extract User Details
+//         const user = userRole.individual; // Using alias 'individual'
+
+//         // 🔑 Step 3: Validate Password
+//         if (!user.password || !bcrypt.compareSync(password, user.password)) {
+//             console.error("❌ Login Failed: Incorrect password");
+//             return res.status(401).json({ message: "Invalid credentials" });
+//         }
+
+//         // 📝 Step 4: Get Single Role Object (Not an array)
+//         const role = {
+//             role_id: userRole.role.id,
+//             role_name: userRole.role.role_name,
+//             level_name: userRole.role.level_name,
+//             permissions: userRole.role.permissions || []
+//         };
+
+//         console.log("🎯 Retrieved User Role:", role);
+
+//         // 🔐 Step 5: Generate JWT Token
+//         const token = jwt.sign(
+//             { id: user.id, role }, // Store single role (not array)
+//             SECRET_KEY,
+//             { expiresIn: "60m" }
+//         );
+
+//         console.log("✅ Login Successful for:", user.first_name);
+
+//         // 📤 Step 6: Send Response (Single Role, Not an Array)
+//         res.status(200).json({
+//             access_token: token,
+//             token_type: "bearer",
+//             user: {
+//                 id: user.id,
+//                 full_name: `${user.first_name} ${user.last_name}`,
+//                 role: role  // Return a single role, not an array
+//             }
+//         });
+
+//     } catch (error) {
+//         console.error("❌ Login Error:", error);
+//         res.status(500).json({ message: "Server error", error: error.message });
+//     }
+// });
+
+
 router.post("/login", async (req, res) => {
     const { username, password } = req.body;
-  
+
     try {
-        console.log("🔍 Login Attempt:", username, password);
-  
-        // 🔑 Fetch user by email
+        console.log("🔍 Login Attempt:", username);
+
+        // 🔍 Step 1: Fetch User from Individuals Table
         const user = await Individuals.findOne({
             where: { email: username },
             attributes: ["id", "first_name", "last_name", "password"]
         });
-  
-        if (!user || !user.password) {
-            console.error("❌ Login Failed: User not found or password missing");
+
+        if (!user) {
+            console.error("❌ Login Failed: User not found");
             return res.status(401).json({ message: "Invalid credentials" });
         }
 
-        // 🔑 Compare hashed password
-        const isMatch = bcrypt.compareSync(password, user.password);
-        if (!isMatch) {
+        console.log("✅ User Found:", user);
+
+        // 🔑 Step 2: Validate Password
+        if (!user.password || !bcrypt.compareSync(password, user.password)) {
             console.error("❌ Login Failed: Incorrect password");
             return res.status(401).json({ message: "Invalid credentials" });
         }
-  
-        // 🔍 Fetch roles and permissions from UserRoles
-        const userRoles = await UserRoles.findAll({
+
+        // 🔍 Step 3: Fetch Role ID from UserRoles Table
+        const userRole = await UserRoles.findOne({
             where: { user_id: user.id },
-            include: [
-                {
-                    model: Roles,
-                    as: "role",  // Ensure alias matches your Sequelize association
-                    attributes: ["id", "role_name", "level_name", "permissions"]
-                }
-            ]
+            attributes: ["role_id"]
         });
 
-        console.log("🎯 Retrieved User Roles:", userRoles);
+        if (!userRole) {
+            console.error("❌ Login Failed: No role assigned to user");
+            return res.status(401).json({ message: "Invalid credentials" });
+        }
 
-        // 📝 Format roles and permissions
-        const roles = userRoles.map(userRole => ({
-            // role_id: userRole.role.id,
-            // role_name: userRole.role.role_name,
-            level_name: userRole.role.level_name,
-            permissions: userRole.role.permissions || []
-        }));
+        console.log("✅ Role ID Found:", userRole.role_id);
 
-        // 🔑 Generate JWT token
+        // 🔍 Step 4: Fetch Role Details from Roles Table
+        const role = await Roles.findOne({
+            where: { id: userRole.role_id },
+            attributes: ["id", "role_name", "level_name", "permissions"]
+        });
+
+        if (!role) {
+            console.error("❌ Login Failed: Role not found");
+            return res.status(401).json({ message: "Invalid credentials" });
+        }
+
+        console.log("✅ Role Retrieved:", role);
+
+        // 🔐 Step 5: Generate JWT Token
         const token = jwt.sign(
-            { id: user.id, roles },
+            { id: user.id, role }, // Store single role (not array)
             SECRET_KEY,
             { expiresIn: "60m" }
         );
 
         console.log("✅ Login Successful for:", user.first_name);
 
-        // 📤 Send response with user and roles
+        // 📤 Step 6: Send Response (Single Role, Not an Array)
         res.status(200).json({
             access_token: token,
             token_type: "bearer",
             user: {
                 id: user.id,
                 full_name: `${user.first_name} ${user.last_name}`,
-
-                roles: roles
+                role: role  // ✅ Return a single role, not an array
             }
         });
 
@@ -373,12 +528,113 @@ router.post("/login", async (req, res) => {
 });
 
 
+/**
+ * @swagger
+ * /individualsRoles/api/account/me:
+ *   get:
+ *     summary: Get authenticated user details with roles
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User data retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     full_name:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     role:
+ *                       type: object
+ *                       properties:
+ *                         role_name:
+ *                           type: string
+ *                         level_name:
+ *                           type: string
+ *                         permissions:
+ *                           type: array
+ *                           items:
+ *                             type: string
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Invalid token
+ *       404:
+ *         description: User or role not found
+ */
+router.get("/api/account/me", authenticateToken, async (req, res) => {
+    try {
+        console.log("🔍 Fetching UserRole for:", req.user.id);
+
+        // Step 1: Get user_id from UserRoles table
+        const userRole = await UserRoles.findOne({
+            where: { user_id: req.user.id  }, // Use ID from decoded JWT
+            // attributes: ["user_id", "role_id"]
+        });
+
+        console.log("✅ Found UserRole:", userRole);
+        console.log("🔍 Extracted user_id from UserRole:", userRole.user_id);
+        console.log("🔍 Extracted role_id from UserRole:", userRole.role_id);
 
 
+        if (!userRole) {
+            return res.status(404).json({ message: "User role not found" });
+        }
 
+        console.log("✅ Found UserRole:", userRole);
 
+        // Step 2: Fetch user details from Individuals table
+        const user = await Individuals.findOne({
+            where: { id: userRole.user_id },
+            attributes: ["id", "first_name", "last_name", "email"]
+        });
 
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
 
+        console.log("✅ Found User:", user);
+
+        // Step 3: Fetch role details from Roles table
+        const role = await Roles.findOne({
+            where: { id: userRole.role_id },
+            attributes: ["id", "role_name", "level_name", "permissions"]
+        });
+
+        if (!role) {
+            return res.status(404).json({ message: "Role not found" });
+        }
+
+        console.log("✅ Found Role:", role);
+
+        // Step 4: Return the final user object with role details
+        res.status(200).json({
+            user: {
+                id: user.id,
+                full_name: `${user.first_name} ${user.last_name}`,
+                email: user.email,
+                role: {
+                    role_name: role.role_name,
+                    level_name: role.level_name,
+                    permissions: role.permissions || []
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error("❌ Error fetching user:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
 
 
 
