@@ -18,6 +18,14 @@ module.exports = (sequelize, Sequelize) => {
                 isEmail: true, // Validate email format
             },
         },
+        reset_token: {  // ✅ Added Reset Token Column
+            type: Sequelize.STRING,
+            allowNull: true,
+        },
+        token_expiry: {  // ✅ Added Token Expiry Column
+            type: Sequelize.DATE,
+            allowNull: true,
+        },
         password: {
             type: Sequelize.STRING(255),
             allowNull: false,

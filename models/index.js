@@ -31,7 +31,7 @@ db.Individuals = require('./individuals.js')(sequelize, Sequelize);
 db.LevelHierarchy = require('./levelhierarchy.js')(sequelize, Sequelize);
 
 db.UserRoles = require("./individualandroles.js")(sequelize, DataTypes);
-
+db.Applicants = require("./applicants.js")(sequelize, DataTypes);
 // ✅ Individual belongs to Role through UserRoles
 db.Individuals.belongsToMany(db.Roles, { 
   through: db.UserRoles, 

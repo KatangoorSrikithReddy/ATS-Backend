@@ -16,7 +16,7 @@ const rolesRouter = require('./routers/roles.routers');
 const IndividualRouter = require('./routers/individuals.routers');
 const IndividualandRoles =   require('./routers/individualsroles.routers');
 const LevelHierarchies = require('./routers/level.routers');
-
+const ResetPassword  = require("./routers/reset.routers")
 app.use(express.json());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -39,6 +39,7 @@ app.use('/individuals', IndividualRouter )
 app.use("/individualsRoles", IndividualandRoles)
 app.use('/levelhierarchies', LevelHierarchies)
 
+app.use('/api', ResetPassword)
 
 
 
