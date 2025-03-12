@@ -19,6 +19,13 @@ const LevelHierarchies = require('./routers/level.routers');
 const ResetPassword  = require("./routers/reset.routers")
 
 const Applicant = require('./routers/applicant.routers')
+const ClientPageNew = require('./routers/clientnew.routers')
+
+
+
+
+
+
 app.use(express.json());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -45,7 +52,7 @@ app.use('/api', ResetPassword)
 
 app.use('/applicants', Applicant)
 
-
+app.use('/client', ClientPageNew)
 
 
 
