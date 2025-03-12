@@ -7,6 +7,7 @@ const router = express.Router();
 const { minioClient, bucketName } = require("../config/minio");
 console.log("Client Page New", ClientPageNew);
 
+const { v4: uuidv4 } = require("uuid");
 
 
 // const storage = multer.diskStorage({
@@ -19,17 +20,14 @@ console.log("Client Page New", ClientPageNew);
 // });
 
 const upload = multer({ storage: multer.memoryStorage() });
-
 /**
  * @swagger
  * /client/create:
  *   post:
  *     summary: Upload a file and create a client record
- *     description: Uploads a file and stores client information in the database.
+ *     description: Uploads a file to MinIO and stores client information in the database.
  *     tags:
  *       - ClientPages
- *     security:
- *       - bearerAuth: []
  *     requestBody:
  *       content:
  *         multipart/form-data:
@@ -90,9 +88,10 @@ const upload = multer({ storage: multer.memoryStorage() });
  *               upload:
  *                 type: string
  *                 format: binary
+ *                 description: The file to be uploaded
  *     responses:
  *       200:
- *         description: Client created successfully
+ *         description: File uploaded successfully
  *         content:
  *           application/json:
  *             schema:
@@ -100,63 +99,35 @@ const upload = multer({ storage: multer.memoryStorage() });
  *               properties:
  *                 message:
  *                   type: string
- *                   example: "Client created successfully!"
+ *                   example: "File uploaded successfully!"
  *                 client:
  *                   type: object
  *                   properties:
  *                     client_name:
  *                       type: string
  *                       example: "ABC Corp"
- *                     file:
- *                       type: string
- *                       example: "uploads/1709876543210-file.pdf"
+ *                     document_details:
+ *                       type: object
+ *                       properties:
+ *                         file_name:
+ *                           type: string
+ *                           example: "document.pdf"
+ *                         file_url:
+ *                           type: string
+ *                           example: "http://127.0.0.1:9000/client-files/document.pdf"
  *       400:
- *         description: Bad request
+ *         description: Bad request (Missing file or required fields)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "File is required"
  *       500:
  *         description: Server error
  */
-// router.post("/create", upload.single("upload"), async (req, res) => {
-//     try {
-//         const { client_name, contacts, email_id, address, country, state, city, postal_code,
-//                 website, status, primary_owner, about_company, industry, category, created_by } = req.body;
-
-//         const contactsJSON = JSON.parse(contacts);
-//         const documentDetails = req.file
-//             ? {
-//                 file_name: req.file.originalname,
-//                 file_type: req.file.mimetype,
-//                 file_size: req.file.size,
-//                 file_path: `uploads/${Date.now()}-${req.file.originalname}`,
-//             }
-//             : null;
-
-
-//         const newClient = await ClientPageNew.create({
-//             client_name,
-//             contacts: contactsJSON,
-//             email_id,
-//             address,
-//             country,
-//             state,
-//             city,
-//             postal_code,
-//             website,
-//             status,
-//             primary_owner,
-//             about_company,
-//             industry,
-//             category,
-//              document_details: documentDetails,
-//             created_by,
-//         });
-
-//         res.json({ message: "Client created successfully!", client: newClient });
-//     } catch (error) {
-//         console.error("Error creating client:", error);
-//         res.status(500).json({ error: "Server error" });
-//     }
-// });
-
 router.post("/create", upload.single("upload"), async (req, res) => {
     try {
         if (!req.file) {
@@ -164,11 +135,41 @@ router.post("/create", upload.single("upload"), async (req, res) => {
         }
 
         const { client_name, contacts, email_id, address, country, state, city, postal_code,
-                            website, status, primary_owner, about_company, industry, category, created_by } = req.body;
+            website, status, primary_owner, about_company, industry, category, created_by } = req.body;
             
-        // ✅ Upload file to MinIO
+        // ✅ Parse contacts JSON and ensure each contact has a UUID
+        let contactsJSON = [];
 
-        const contactsJSON = JSON.parse(contacts);
+if (contacts) {
+    try {
+        if (typeof contacts === "string") {
+            console.log("📌 Received contacts as a string:", contacts);
+            contactsJSON = JSON.parse(contacts); // ✅ Parse only if it's a string
+        } else if (Array.isArray(contacts)) {
+            console.log("📌 Received contacts as an array:", contacts);
+            contactsJSON = contacts; // ✅ Already an array, use as is
+        } else {
+            return res.status(400).json({ error: "Contacts must be a valid JSON array" });
+        }
+
+        // ✅ Ensure each contact has a UUID
+        contactsJSON = contactsJSON.map(contact => ({
+            id: contact.id || uuidv4(),
+            name: contact.contactname,
+            mobilenumber: contact.mobilenumber,
+            officenumber: contact.officenumber,
+            email: contact.email || null ,
+            designation : contact.designation || null // Handle optional designation
+        }));
+
+    } catch (error) {
+        console.error("❌ Invalid contacts JSON:", error);
+        return res.status(400).json({ error: "Invalid contacts JSON format" });
+    }
+}
+
+
+        // ✅ Upload file to MinIO
         const fileName = `${Date.now()}-${req.file.originalname}`;
         await minioClient.putObject(bucketName, fileName, req.file.buffer, req.file.size, {
             "Content-Type": req.file.mimetype
@@ -180,25 +181,24 @@ router.post("/create", upload.single("upload"), async (req, res) => {
         // ✅ Store file details in the database
         const newClient = await ClientPageNew.create({
             client_name,
-                        contacts: contactsJSON,
-                        email_id,
-                        address,
-                        country,
-                        state,
-                        city,
-                        postal_code,
-                        website,
-                        status,
-                        primary_owner,
-                        about_company,
-                        industry,
-                        category,
+            contacts: contactsJSON,
+            email_id,
+            address,
+            country,
+            state,
+            city,
+            postal_code,
+            website,
+            status,
+            primary_owner,
+            about_company,
+            industry,
+            category,
             document_details: {
                 file_name: req.file.originalname,
                 file_type: req.file.mimetype,
                 file_size: req.file.size,
                 file_url: fileUrl,
-                
             },
             created_by,
         });
@@ -210,7 +210,6 @@ router.post("/create", upload.single("upload"), async (req, res) => {
         res.status(500).json({ error: "Server error" });
     }
 });
-
 
 
 
@@ -304,78 +303,53 @@ router.get("/list", async (req, res) => {
 
 // const router = express.Router();
 
+
 /**
  * @swagger
  * /client/update/{id}:
  *   put:
- *     summary: Update client details and optionally replace the uploaded file
- *     description: Update client details and upload a new file if provided. Old file is deleted if replaced.
+ *     summary: Update client contacts and details
+ *     description: Accepts an array of contacts and updates the client's details.
  *     tags:
  *       - ClientPages
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
- *         description: The ID of the client to update
  *         schema:
  *           type: string
+ *         description: The ID of the client to update
  *     requestBody:
+ *       required: true
  *       content:
- *         multipart/form-data:
+ *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               client_name:
- *                 type: string
- *                 example: "Updated Corp"
- *               contacts:
- *                 type: string
- *                 example: '[{"name": "John Doe", "phone": "9876543210"}]'
- *               email_id:
- *                 type: string
- *                 example: "updated@example.com"
- *               address:
- *                 type: string
- *                 example: "123 Updated Street"
- *               country:
- *                 type: string
- *                 example: "USA"
- *               state:
- *                 type: string
- *                 example: "California"
- *               city:
- *                 type: string
- *                 example: "Los Angeles"
- *               postal_code:
- *                 type: string
- *                 example: "90001"
- *               website:
- *                 type: string
- *                 example: "https://updatedcorp.com"
- *               status:
- *                 type: string
- *                 example: "Active"
- *               primary_owner:
- *                 type: string
- *                 example: "Jane Doe"
- *               about_company:
- *                 type: string
- *                 example: "We are an updated tech company."
- *               industry:
- *                 type: string
- *                 example: "Technology"
- *               category:
- *                 type: string
- *                 example: "Enterprise"
- *               created_by:
- *                 type: string
- *                 example: "Admin"
- *               upload:
- *                 type: string
- *                 format: binary  # File upload field
+ *             type: array
+ *             items:
+ *               type: object
+ *               properties:
+ *                 client_id:
+ *                   type: integer
+ *                   example: 1
+ *                 contact_person:
+ *                   type: string
+ *                   example: "John Doe"
+ *                 mobile_number:
+ *                   type: integer
+ *                   example: 1234567890
+ *                 office_number:
+ *                   type: integer
+ *                   example: 987654321
+ *                 email_id:
+ *                   type: string
+ *                   format: email
+ *                   example: "john.doe@example.com"
+ *                 designation:
+ *                   type: string
+ *                   example: "Manager"
  *     responses:
  *       200:
- *         description: Client updated successfully
+ *         description: Client contacts updated successfully
  *         content:
  *           application/json:
  *             schema:
@@ -383,94 +357,18 @@ router.get("/list", async (req, res) => {
  *               properties:
  *                 message:
  *                   type: string
- *                   example: "Client updated successfully!"
- *                 client:
- *                   type: object
- *                   properties:
- *                     client_name:
- *                       type: string
- *                       example: "Updated Corp"
- *                     document:
- *                       type: object
- *                       properties:
- *                         file_name:
- *                           type: string
- *                           example: "new-document.pdf"
- *                         file_type:
- *                           type: string
- *                           example: "application/pdf"
- *                         file_size:
- *                           type: integer
- *                           example: 204800
- *                         file_path:
- *                           type: string
- *                           example: "uploads/1709876543210-new-document.pdf"
+ *                   example: "Client contacts updated successfully!"
+ *       400:
+ *         description: Bad request (Invalid JSON format)
  *       404:
  *         description: Client not found
  *       500:
  *         description: Server error
  */
-// router.put("/update/:id", upload.single("upload"), async (req, res) => {
-//     try {
-//         const clientId = req.params.id;
-//         const client = await ClientPageNew.findByPk(clientId);
 
-//         if (!client) {
-//             return res.status(404).json({ error: "Client not found" });
-//         }
-
-//         // ✅ Parse JSON Fields (Contacts)
-//         const updatedContacts = req.body.contacts ? JSON.parse(req.body.contacts) : client.contacts;
-
-//         // ✅ Prepare Updated Document Details
-//         let documentDetails = client.document_details;
-//         if (req.file) {
-//             // ✅ Delete Old File (If Exists)
-//             if (documentDetails && documentDetails.file_path) {
-//                 const oldFilePath = path.join(__dirname, "../", documentDetails.file_path);
-//                 if (fs.existsSync(oldFilePath)) {
-//                     fs.unlinkSync(oldFilePath); // Delete old file
-//                 }
-//             }
-
-//             // ✅ Save New File Details
-//             documentDetails = {
-//                 file_name: req.file.originalname,
-//                 file_type: req.file.mimetype,
-//                 file_size: req.file.size,
-//                 file_path: `uploads/${Date.now()}-${req.file.originalname}`,
-//             };
-//         }
-
-//         // ✅ Update Client Data in DB
-//         await client.update({
-//             client_name: req.body.client_name || client.client_name,
-//             contacts: updatedContacts,
-//             email_id: req.body.email_id || client.email_id,
-//             address: req.body.address || client.address,
-//             country: req.body.country || client.country,
-//             state: req.body.state || client.state,
-//             city: req.body.city || client.city,
-//             postal_code: req.body.postal_code || client.postal_code,
-//             website: req.body.website || client.website,
-//             status: req.body.status || client.status,
-//             primary_owner: req.body.primary_owner || client.primary_owner,
-//             about_company: req.body.about_company || client.about_company,
-//             industry: req.body.industry || client.industry,
-//             category: req.body.category || client.category,
-//             document_details: documentDetails,  // ✅ Updated File Details
-//             created_by: req.body.created_by || client.created_by,
-//         });
-
-//         res.json({ message: "Client updated successfully!", client });
-
-//     } catch (error) {
-//         console.error("Error updating client:", error);
-//         res.status(500).json({ error: "Server error" });
-//     }
-// });
 router.put("/update/:id", upload.single("upload"), async (req, res) => {
     try {
+        console.log("this is req.body", req.params.id)
         const clientId = req.params.id;
         const client = await ClientPageNew.findByPk(clientId);
 
@@ -478,23 +376,64 @@ router.put("/update/:id", upload.single("upload"), async (req, res) => {
             return res.status(404).json({ error: "Client not found" });
         }
 
-        // ✅ Parse JSON Fields (Contacts)
-        const updatedContacts = req.body.contacts ? JSON.parse(req.body.contacts) : client.contacts;
+        // ✅ Extract Data
+        const {
+            client_name,
+            email_id,
+            address,
+            country,
+            state,
+            city,
+            postal_code,
+            website,
+            status,
+            primary_owner,
+            about_company,
+            industry,
+            category,
+            created_by,
+            isactive,
+            contacts
+        } = req.body;
 
-        let documentDetails = client.document_details;
+        console.log("this is request body", req.body)
+        // body = JSON.parse(req.body.contacts);
 
-        if (req.file) {
-            // ✅ Delete Old File from MinIO (If Exists)
-            if (documentDetails && documentDetails.file_name) {
-                try {
-                    await minioClient.removeObject(bucketName, documentDetails.file_name);
-                    console.log(`✅ Deleted old file from MinIO: ${documentDetails.file_name}`);
-                } catch (err) {
-                    console.error("❌ Error deleting old file from MinIO:", err);
-                }
+        console.log("********************")
+        console.log("Contacts:", req.body.contacts);
+
+
+        // ✅ Handle Contacts Update
+        let updatedContacts = client.contacts || []; // Keep existing contacts if none provided
+        if (req.body.contacts) {
+            try {
+                let newContacts = req.body.contacts;
+                
+                // ✅ Ensure each contact has a UUID
+                updatedContacts = newContacts.map(contact => ({
+                    id: contact.id || uuidv4(), // Keep existing ID or assign a new one
+                    name: contact.name,
+                    email: contact.email || null,
+                    phone: contact.phone
+                }));
+
+
+                console.log("this is contacts list", updatedContacts)
+            } catch (error) {
+                return res.status(400).json({ error: "Invalid contacts JSON format" });
             }
+        }
 
-            // ✅ Upload New File to MinIO
+        // ✅ Handle File Update in MinIO
+        let documentDetails = client.document || {}; // Keep old document if no new file is uploaded
+        if (req.file) {
+            // ✅ Delete Old File from MinIO
+            if (documentDetails?.file_url) {
+                const oldFileName = documentDetails.file_url.split("/").pop();
+                await minioClient.removeObject(bucketName, oldFileName);
+            }
+            
+            // ✅ Upload New File
             const fileName = `${Date.now()}-${req.file.originalname}`;
             await minioClient.putObject(bucketName, fileName, req.file.buffer, req.file.size, {
                 "Content-Type": req.file.mimetype
@@ -504,35 +443,35 @@ router.put("/update/:id", upload.single("upload"), async (req, res) => {
             const fileUrl = `http://127.0.0.1:9000/${bucketName}/${fileName}`;
 
             documentDetails = {
-                file_name: fileName,
+                file_name: req.file.originalname,
                 file_type: req.file.mimetype,
                 file_size: req.file.size,
-                file_url: fileUrl // Store MinIO file URL instead of local path
+                file_url: fileUrl
             };
         }
 
         // ✅ Update Client Data in DB
         await client.update({
-            client_name: req.body.client_name || client.client_name,
+            client_name: client_name || client.client_name,
             contacts: updatedContacts,
-            email_id: req.body.email_id || client.email_id,
-            address: req.body.address || client.address,
-            country: req.body.country || client.country,
-            state: req.body.state || client.state,
-            city: req.body.city || client.city,
-            postal_code: req.body.postal_code || client.postal_code,
-            website: req.body.website || client.website,
-            status: req.body.status || client.status,
-            primary_owner: req.body.primary_owner || client.primary_owner,
-            about_company: req.body.about_company || client.about_company,
-            industry: req.body.industry || client.industry,
-            category: req.body.category || client.category,
-            document_details: documentDetails,  // ✅ Updated File Details
-            created_by: req.body.created_by || client.created_by,
-            document_details: documentDetails,  // ✅ Store MinIO File Info
+            email_id: email_id || client.email_id,
+            address: address || client.address,
+            country: country || client.country,
+            state: state || client.state,
+            city: city || client.city,
+            postal_code: postal_code || client.postal_code,
+            website: website || client.website,
+            status: status || client.status,
+            primary_owner: primary_owner || client.primary_owner,
+            about_company: about_company || client.about_company,
+            industry: industry || client.industry,
+            category: category || client.category,
+            created_by: created_by || client.created_by,
+            isactive: isactive !== undefined ? isactive : client.isactive, // Update isactive flag
+            document: documentDetails // ✅ Update document
         });
 
-        res.json({ message: "Client updated successfully with MinIO!", client });
+        res.json({ message: "Client updated successfully!", client });
 
     } catch (error) {
         console.error("Error updating client:", error);
