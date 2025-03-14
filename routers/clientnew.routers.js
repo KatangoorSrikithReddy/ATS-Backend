@@ -129,15 +129,23 @@ const upload = multer({ storage: multer.memoryStorage() });
  *         description: Server error
  */
 router.post("/create", upload.single("upload"), async (req, res) => {
+    console.log("this is triggering ")
     try {
         if (!req.file) {
             return res.status(400).json({ error: "File is required" });
         }
 
-        const { client_name, contacts, email_id, address, country, state, city, postal_code,
+        console.log("this is required", req.body)
+
+        const { client_name, contacts, contacts_number,email_id, address, country, state, city, postal_code,
             website, status, primary_owner, about_company, industry, category, created_by } = req.body;
             
         // ✅ Parse contacts JSON and ensure each contact has a UUID
+
+        const existingClient = await ClientPageNew.findOne({ where: { client_name } });
+        if (existingClient) {
+            return res.status(409).json({ error: "Client name already exists. Please choose another name." });
+        }
         let contactsJSON = [];
 
 if (contacts) {
@@ -155,10 +163,10 @@ if (contacts) {
         // ✅ Ensure each contact has a UUID
         contactsJSON = contactsJSON.map(contact => ({
             id: contact.id || uuidv4(),
-            name: contact.contactname,
-            mobilenumber: contact.mobilenumber,
-            officenumber: contact.officenumber,
-            email: contact.email || null ,
+            name: contact.contact_name,
+            mobilenumber: contact.mobile_number,
+            officenumber: contact.office_number,
+            email: contact.email_id || null ,
             designation : contact.designation || null // Handle optional designation
         }));
 
@@ -183,6 +191,7 @@ if (contacts) {
             client_name,
             contacts: contactsJSON,
             email_id,
+            contacts_number,
             address,
             country,
             state,
@@ -202,6 +211,7 @@ if (contacts) {
             },
             created_by,
         });
+        console.log("this is new client", newClient)
 
         res.json({ message: "File uploaded successfully!", client: newClient });
 
@@ -269,6 +279,7 @@ router.get("/list", async (req, res) => {
             client_name: client.client_name,
             contacts: client.contacts ,
             email_id: client.email_id,
+            contacts_number : client.contacts_number,
             address: client.address,
             country: client.country,
             state: client.state,
@@ -278,6 +289,7 @@ router.get("/list", async (req, res) => {
             status: client.status,
             primary_owner: client.primary_owner,
             about_company: client.about_company,
+            client_visibility : client.client_visibility,
             industry: client.industry,
             category: client.category,
             created_by: client.created_by,

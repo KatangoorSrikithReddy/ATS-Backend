@@ -15,6 +15,10 @@ module.exports = (sequelize, DataTypes) => {
                 isEmail: true,
             },
         },
+        contacts_number: {  // ✅ Single Contact Number (No Validation)
+            type: DataTypes.STRING,
+            allowNull: true,  // Can be nullable
+        },
         address: {
             type: DataTypes.STRING,
             allowNull: false,
