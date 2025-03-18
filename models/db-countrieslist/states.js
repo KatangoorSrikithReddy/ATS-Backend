@@ -1,17 +1,37 @@
-// models/State.js
-const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../ci');
-const Country = require('./Country');
+// const { DataTypes } = require("sequelize");
+// const sequelize = require("../db");
+// const Country = require("./countries");
 
-class State extends Model {}
-State.init({
-  name: DataTypes.STRING,
-  country_id: DataTypes.INTEGER,
-}, {
-  sequelize,
-  modelName: 'State',
-});
+module.exports = (sequelize, DataTypes) => {
+const State = sequelize.define("State", {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
+  },
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  country_id: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: "Countries",
+      key: "id",
+    },
+    createdAt: {
+      allowNull: false,
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW
+    },
+    updatedAt: {
+      allowNull: false,
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW
+    }
+  }
+}, { timestamps: true });
 
-State.belongsTo(Country, { foreignKey: 'country_id' });
-
-module.exports = State;
+return State;
+};

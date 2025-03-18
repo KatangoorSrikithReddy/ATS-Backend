@@ -20,7 +20,7 @@ const ResetPassword  = require("./routers/reset.routers")
 
 const Applicant = require('./routers/applicant.routers')
 const ClientPageNew = require('./routers/clientnew.routers')
-
+const locationRoutes = require('./routers/location.routers')
 
 
 
@@ -53,6 +53,7 @@ app.use('/api', ResetPassword)
 app.use('/applicants', Applicant)
 
 app.use('/client', ClientPageNew)
+app.use('/api', locationRoutes)
 
 
 
