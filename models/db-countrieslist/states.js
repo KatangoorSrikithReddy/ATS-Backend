@@ -1,7 +1,7 @@
 // const { DataTypes } = require("sequelize");
 // const sequelize = require("../db");
 // const Country = require("./countries");
-
+// srikith
 module.exports = (sequelize, DataTypes) => {
 const State = sequelize.define("State", {
   id: {
