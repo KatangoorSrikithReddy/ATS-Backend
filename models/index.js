@@ -41,6 +41,8 @@ db.ClientPageNew = require('./client-new.js')(sequelize, Sequelize);
 db.Country = require("./db-countrieslist/countries.js")(sequelize,DataTypes);
 db.State = require("./db-countrieslist/states.js")(sequelize,DataTypes);
 db.City = require("./db-countrieslist/cities.js")(sequelize,DataTypes);
+db.Industry = require("./db-countrieslist/industries.js")(sequelize,DataTypes);
+
 if (!db.Country || !db.State || !db.City) {
   throw new Error("One or more models failed to initialize.");
 }
