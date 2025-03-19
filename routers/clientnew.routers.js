@@ -276,7 +276,9 @@ router.get("/list", async (req, res) => {
 
         // ✅ Format the response with document details
         const clientList = clients.map(client => ({
+            id: client.id,
             client_name: client.client_name,
+            fedral_id : client.fedral_id, 
             contacts: client.contacts ,
             email_id: client.email_id,
             contacts_number : client.contacts_number,
@@ -378,9 +380,169 @@ router.get("/list", async (req, res) => {
  *         description: Server error
  */
 
+// router.put("/update/:id", upload.single("upload"), async (req, res) => {
+//     try {
+//         console.log("this is req.body", req.params.id)
+//         const clientId = req.params.id;
+//         const client = await ClientPageNew.findByPk(clientId);
+
+//         if (!client) {
+//             return res.status(404).json({ error: "Client not found" });
+//         }
+
+//         // ✅ Extract Data
+//         const {
+//             client_name,
+//             email_id,
+//             address,
+//             country,
+//             state,
+//             city,
+//             postal_code,
+//             website,
+//             status,
+//             primary_owner,
+//             about_company,
+//             industry,
+//             category,
+//             created_by,
+//             isactive,
+//             document,
+//             contacts
+//         } = req.body;
+
+//         console.log("this is request body", req.body)
+//         // body = JSON.parse(req.body.contacts);
+
+//         console.log("********************")
+//         console.log("Contacts:", req.body.contacts);
+
+
+//         // ✅ Handle Contacts Update
+//         let updatedContacts = client.contacts || []; // Keep existing contacts if none provided
+//         if (req.body.contacts) {
+//             try {
+//                 let newContacts = req.body.contacts;
+                
+//                 // ✅ Ensure each contact has a UUID
+//                 updatedContacts = newContacts.map(contact => ({
+//                     id: contact.id || uuidv4(), // Keep existing ID or assign a new one
+//                     name: contact.name,
+//                     email: contact.email || null,
+//                     mobilenumber: contact.mobilenumber,
+//                     officenumber: contact.officenumber,
+//                     designation: contact.designation || null // Handle optional designation
+//                 }));
+
+
+//                 console.log("this is contacts list", updatedContacts)
+//             } catch (error) {
+//                 return res.status(400).json({ error: "Invalid contacts JSON format" });
+//             }
+//         }
+
+//         // ✅ Handle File Update in MinIO
+//         try {
+//             // ✅ Ensure documentDetails is initialized properly
+//             let documentDetails = client?.document_details || {}; 
+//             console.log("📂 Document Details Before Update:", documentDetails);
+        
+//             console.log("📂 Incoming File:", req.file);
+        
+//             // ✅ Step 1: Remove Old File (if exists)
+//             let oldFileRemoved = false;
+//             if (documentDetails?.file_url) {
+//                 try {
+//                     const oldFileName = documentDetails.file_url.split("/").pop();
+//                     await minioClient.removeObject(bucketName, oldFileName);
+//                     console.log(`✅ Old File Removed: ${oldFileName}`);
+//                     oldFileRemoved = true; // ✅ Flag to confirm old file removal
+//                 } catch (error) {
+//                     console.error("⚠️ Failed to remove old file:", error.message);
+//                     oldFileRemoved = false;
+//                 }
+//             }
+        
+//             // ✅ Step 2: Upload New File (Only if Old File is Removed Successfully OR No Old File Exists)
+//             if (req.file && (oldFileRemoved || !documentDetails?.file_url)) {
+//                 try {
+//                     const fileName = `${Date.now()}-${req.file.originalname}`;
+//                     await minioClient.putObject(bucketName, fileName, req.file.buffer, req.file.size, {
+//                         "Content-Type": req.file.mimetype
+//                     });
+        
+//                     // ✅ Generate File URL
+//                     const fileUrl = `http://127.0.0.1:9000/${bucketName}/${fileName}`;
+//                     console.log(`✅ New File Uploaded: ${fileName}`);
+        
+//                     // ✅ Update Document Details
+//                     documentDetails = {  // ✅ Reassign documentDetails correctly
+//                         file_name: req.file.originalname,
+//                         file_type: req.file.mimetype,
+//                         file_size: req.file.size,
+//                         file_url: fileUrl
+//                     };
+        
+//                     console.log("📤 Document Successfully Updated:", documentDetails);
+//                 } catch (error) {
+//                     console.error("❌ Error Uploading New File:", error.message);
+//                 }
+//             } else {
+//                 console.log("⚠️ Skipping File Upload - Old File Not Removed or No New File Provided.");
+//             }
+        
+//             // ✅ Ensure documentDetails is available before updating the client
+//             // if (!documentDetails || Object.keys(documentDetails).length === 0) {
+//             //     console.log("⚠️ No new document uploaded, keeping old document details.");
+//             // }
+        
+//         } catch (error) {
+//             console.error("❌ Unexpected Error in Document Handling:", error.message);
+//         }
+        
+
+
+
+//         if (documentDetails) {
+//             console.log("📂 This is document details:", documentDetails);
+//         } else {
+//             console.log("❌ No document details");
+//         }
+        
+        
+
+//         // ✅ Update Client Data in DB
+//         await client.update({
+//             id : clientId,
+//             client_name: client_name || client.client_name,
+//             contacts: updatedContacts,
+//             email_id: email_id || client.email_id,
+//             address: address || client.address,
+//             country: country || client.country,
+//             state: state || client.state,
+//             city: city || client.city,
+//             postal_code: postal_code || client.postal_code,
+//             website: website || client.website,
+//             status: status || client.status,
+//             primary_owner: primary_owner || client.primary_owner,
+//             about_company: about_company || client.about_company,
+//             industry: industry || client.industry,
+//             category: category || client.category,
+//             created_by: created_by || client.created_by,
+//             isactive: isactive !== undefined ? isactive : client.isactive, // Update isactive flag
+//             document_details: documentDetails // ✅ Update document
+//         });
+
+//         res.json({ message: "Client updated successfully!", client });
+
+//     } catch (error) {
+//         console.error("Error updating client:", error);
+//         res.status(500).json({ error: "Server error" });
+//     }
+// });
 router.put("/update/:id", upload.single("upload"), async (req, res) => {
     try {
-        console.log("this is req.body", req.params.id)
+        console.log("this is req.body", req.params.id);
         const clientId = req.params.id;
         const client = await ClientPageNew.findByPk(clientId);
 
@@ -405,69 +567,99 @@ router.put("/update/:id", upload.single("upload"), async (req, res) => {
             category,
             created_by,
             isactive,
+            fedral_id,
+            client_visibility,
             contacts
         } = req.body;
 
-        console.log("this is request body", req.body)
-        // body = JSON.parse(req.body.contacts);
-
-        console.log("********************")
+        console.log("this is request body", req.body);
+        console.log("********************");
         console.log("Contacts:", req.body.contacts);
-
 
         // ✅ Handle Contacts Update
         let updatedContacts = client.contacts || []; // Keep existing contacts if none provided
         if (req.body.contacts) {
             try {
                 let newContacts = req.body.contacts;
-                
-                // ✅ Ensure each contact has a UUID
+
                 updatedContacts = newContacts.map(contact => ({
-                    id: contact.id || uuidv4(), // Keep existing ID or assign a new one
+                    id: contact.id || uuidv4(),
                     name: contact.name,
                     email: contact.email || null,
-                    phone: contact.phone
+                    mobilenumber: contact.mobilenumber,
+                    officenumber: contact.officenumber,
+                    designation: contact.designation || null
                 }));
 
-
-                console.log("this is contacts list", updatedContacts)
+                console.log("this is contacts list", updatedContacts);
             } catch (error) {
                 return res.status(400).json({ error: "Invalid contacts JSON format" });
             }
         }
 
+        // ✅ Declare documentDetails BEFORE file handling
+        let documentDetails = client?.document_details || null;
+
         // ✅ Handle File Update in MinIO
-        let documentDetails = client.document || {}; // Keep old document if no new file is uploaded
-        if (req.file) {
-            // ✅ Delete Old File from MinIO
-            if (documentDetails?.file_url) {
-                const oldFileName = documentDetails.file_url.split("/").pop();
-                await minioClient.removeObject(bucketName, oldFileName);
+        try {
+            console.log("📂 Document Details Before Update:", documentDetails);
+            console.log("📂 Incoming File:", req.file);
+        
+            let oldFileRemoved = false;
+        
+            // ✅ Remove old file only if a new file is provided
+            if (req.file && documentDetails?.file_url) {
+                try {
+                    const oldFileName = documentDetails.file_url.split("/").pop();
+                    await minioClient.removeObject(bucketName, oldFileName);
+                    console.log(`✅ Old File Removed: ${oldFileName}`);
+                    oldFileRemoved = true;
+                } catch (error) {
+                    console.error("⚠️ Failed to remove old file:", error.message);
+                }
             }
-            
-            // ✅ Upload New File
-            const fileName = `${Date.now()}-${req.file.originalname}`;
-            await minioClient.putObject(bucketName, fileName, req.file.buffer, req.file.size, {
-                "Content-Type": req.file.mimetype
-            });
-
-            // ✅ Generate File URL
-            const fileUrl = `http://127.0.0.1:9000/${bucketName}/${fileName}`;
-
-            documentDetails = {
-                file_name: req.file.originalname,
-                file_type: req.file.mimetype,
-                file_size: req.file.size,
-                file_url: fileUrl
-            };
+        
+            // ✅ Upload new file only if a new file is provided
+            if (req.file) {
+                try {
+                    const fileName = `${Date.now()}-${req.file.originalname}`;
+                    await minioClient.putObject(bucketName, fileName, req.file.buffer, req.file.size, {
+                        "Content-Type": req.file.mimetype
+                    });
+        
+                    const fileUrl = `http://127.0.0.1:9000/${bucketName}/${fileName}`;
+                    console.log(`✅ New File Uploaded: ${fileName}`);
+        
+                    documentDetails = {
+                        file_name: req.file.originalname,
+                        file_type: req.file.mimetype,
+                        file_size: req.file.size,
+                        file_url: fileUrl
+                    };
+        
+                    console.log("📤 Document Successfully Updated:", documentDetails);
+                } catch (error) {
+                    console.error("❌ Error Uploading New File:", error.message);
+                }
+            } else {
+                console.log("⚠️ No new file provided. Keeping the existing file.");
+            }
+        } catch (error) {
+            console.error("❌ Unexpected Error in Document Handling:", error.message);
         }
+
+        // ✅ Log Final Document Details
+        console.log("📂 Final Document Details:", documentDetails);
 
         // ✅ Update Client Data in DB
         await client.update({
+            id: clientId,
             client_name: client_name || client.client_name,
+            client_visibility : client_visibility || client.client_visibility,
             contacts: updatedContacts,
             email_id: email_id || client.email_id,
             address: address || client.address,
+            fedral_id : fedral_id || client.fedral_id,
             country: country || client.country,
             state: state || client.state,
             city: city || client.city,
@@ -479,8 +671,8 @@ router.put("/update/:id", upload.single("upload"), async (req, res) => {
             industry: industry || client.industry,
             category: category || client.category,
             created_by: created_by || client.created_by,
-            isactive: isactive !== undefined ? isactive : client.isactive, // Update isactive flag
-            document: documentDetails // ✅ Update document
+            isactive: isactive !== undefined ? isactive : client.isactive,
+            document_details: documentDetails // ✅ Ensure this is defined
         });
 
         res.json({ message: "Client updated successfully!", client });
@@ -490,6 +682,7 @@ router.put("/update/:id", upload.single("upload"), async (req, res) => {
         res.status(500).json({ error: "Server error" });
     }
 });
+
 
 /**
  * @swagger
