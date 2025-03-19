@@ -38,11 +38,26 @@ db.ClientPageNew = require('./client-new.js')(sequelize, Sequelize);
 
 
 
+db.Country = require("./db-countrieslist/countries.js")(sequelize,DataTypes);
+db.State = require("./db-countrieslist/states.js")(sequelize,DataTypes);
+db.City = require("./db-countrieslist/cities.js")(sequelize,DataTypes);
+if (!db.Country || !db.State || !db.City) {
+  throw new Error("One or more models failed to initialize.");
+}
+
+db.Country.hasMany(db.State, {foreignKey: "country_id",onDelete:"CASCADE"});
+db.State.belongsTo(db.Country,{foreignKey: "country_id"});
 
 
+db.State.hasMany(db.City, {foreignKey: "state_id",onDelete:"CASCADE"});
+db.City.belongsTo(db.State,{foreignKey: "state_id"});
 
 
+// db.Country.hasMany(State, { foreignKey: "country_id", onDelete: "CASCADE" });
+// db.State.belongsTo(Country, { foreignKey: "country_id" });
 
+// db.State.hasMany(City, { foreignKey: "state_id", onDelete: "CASCADE" });
+// db.City.belongsTo(State, { foreignKey: "state_id" });
 
 
 
