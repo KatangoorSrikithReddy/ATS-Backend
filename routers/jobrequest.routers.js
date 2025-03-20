@@ -8,10 +8,10 @@ const router = express.Router();
 
 // const { JobRequest } = require('../models'); // Correct import for the JobRequest model
 // const jobrequest = db.Jobrequest
-const { ClientPage, JobRequest} = require('../models');
+const { ClientPageNew, JobRequest} = require('../models');
 const jobrequest = require('../models/jobrequest');
 console.log('JobRequest Model:', JobRequest);
-console.log('Client Model:', ClientPage);
+console.log('Client Model:', ClientPageNew);
 const authenticateToken = require('../middlewaare/auth');
 console.log("Received Token for job request:", authenticateToken);
 /**
@@ -107,7 +107,7 @@ router.post('/', authenticateToken, async (req, res) => {
   console.log("this is different user", req.user);
   try {
     console.log('Request body:', req.body); // Check what data is coming in
-    const client = await ClientPage.findByPk(req.body.client_id);
+    const client = await ClientPageNew.findByPk(req.body.client_id);
     console.log("This is to test client", client);
     console.log('Found client:', client); // Check if the client exists
 
@@ -155,7 +155,7 @@ router.post('/', authenticateToken, async (req, res) => {
 router.get('/', authenticateToken, async (req, res) => {
   console.log("is it working");
   console.log("testing", JobRequest);
-  console.log("testing", ClientPage);
+  console.log("testing", ClientPageNew);
 
   try {
     const jobRequests = await JobRequest.findAll({
@@ -164,7 +164,7 @@ router.get('/', authenticateToken, async (req, res) => {
         'status', 'primary_skills', 'immediate_joining', 'description', 'is_active', 'client_id' // Include client_id
       ],  // Select only the necessary fields from JobRequest
       include: [{
-        model: ClientPage,  // Include the Client model
+        model: ClientPageNew,  // Include the Client model
         as: 'client',   // This alias must match the alias defined in JobRequest.associate
         attributes: ['client_name']  // Only fetch the client_name field from the Client model
       }],
@@ -224,7 +224,7 @@ router.get('/', authenticateToken, async (req, res) => {
 router.get('/:jobRequestId', async (req, res) => {
   try {
     const jobRequest = await JobRequest.findByPk(req.params.jobRequestId, {
-      include: [{ model: ClientPage, as: 'client' }]
+      include: [{ model: ClientPageNew, as: 'client' }]
     });
     if (!jobRequest) {
       return res.status(404).json({ error: 'Job Request not found' });
@@ -279,7 +279,7 @@ router.put('/:jobRequestId', authenticateToken, async (req, res) => {
     await jobRequest.update(req.body);
 
     // Fetch the client associated with the job request
-    const client = await ClientPage.findByPk(jobRequest.client_id);
+    const client = await ClientPageNew.findByPk(jobRequest.client_id);
 
     // Send the updated job request with client_name included
     res.json({

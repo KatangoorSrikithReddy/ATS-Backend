@@ -53,6 +53,8 @@ db.State.hasMany(db.City, {foreignKey: "state_id",onDelete:"CASCADE"});
 db.City.belongsTo(db.State,{foreignKey: "state_id"});
 
 
+
+
 // db.Country.hasMany(State, { foreignKey: "country_id", onDelete: "CASCADE" });
 // db.State.belongsTo(Country, { foreignKey: "country_id" });
 
@@ -105,13 +107,13 @@ foreignKey: "client_id",  // Explicitly set the foreign key to client_id
 as: "client"              // Alias for referencing the associated client
 });
 // ClientPage has many JobRequests
-db.ClientPage.hasMany(db.JobRequest, {
+db.ClientPageNew.hasMany(db.JobRequest, {
   foreignKey: "client_id",  // Foreign key to link JobRequest with ClientPage
   as: "jobRequests"         // Alias for the associated job requests
 });
 
 // JobRequest belongs to one ClientPage
-db.JobRequest.belongsTo(db.ClientPage, {
+db.JobRequest.belongsTo(db.ClientPageNew, {
   foreignKey: "client_id",  // Foreign key to link JobRequest with ClientPage
   as: "client"              // Alias for the associated client (ClientPage)
 });
