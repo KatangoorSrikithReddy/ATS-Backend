@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-          model: 'ClientPage', // This should match the 'clients' table in the database
+          model: 'ClientPageNew', // This should match the 'clients' table in the database
           key: 'id',
         },
       },
@@ -30,6 +30,7 @@ module.exports = (sequelize, DataTypes) => {
     }, {
       tableName: 'job_requests', // Ensure this matches the database table name
     });
+
   
     
     return JobRequest;

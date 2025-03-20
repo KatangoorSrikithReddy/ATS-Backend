@@ -499,7 +499,7 @@ router.get("/", authenticateToken, async (req, res) => {
 router.put("/:id", authenticateToken, async (req, res) => {
     console.log("checking for update role");
     console.log("checking for update role"); // 🔍 Debugging Log
- 
+
     try {
         const loggedInUserId = req.user.id;
         const { id } = req.params;
@@ -548,6 +548,12 @@ router.put("/:id", authenticateToken, async (req, res) => {
         
         if (!existingRole) {
             return res.status(404).json({ message: "Role not found." });
+        }
+        const existingPermissions = existingRole.permissions;
+
+        if (JSON.stringify(existingPermissions) === JSON.stringify(permissions)) {
+        // If the permissions have not changed, respond with no changes made
+        return res.status(200).json({ message: "No changes made to permissions." });
         }
 
         const finalParentRoleId = parent_role_id || existingRole.parent_role_id;
@@ -615,10 +621,62 @@ router.put("/:id", authenticateToken, async (req, res) => {
  *         description: Server error.
  */
 
-router.delete("/delete-role/:id", async (req, res) => {
+// router.delete("/delete-role/:id", async (req, res) => {
+//     try {
+//         const { id } = req.params;
+//         console.log("🔥 Deleting Role ID:", id);
+
+//         // ✅ Check if Role Exists
+//         const existingRole = await Roles.findOne({ where: { id } });
+
+//         if (!existingRole) {
+//             return res.status(404).json({ message: "Role not found." }); // ✅ Prevents multiple responses
+//         }
+
+//         // ✅ Simulate Chidhagni (If No User Found)
+//         const user = req.user || {
+//             id: "0000-1111-2222-3333", // Dummy Chidhagni ID
+//             level_name: "Level 0", // Chidhagni Level
+//             role_name: "Chidhagni" // Chidhagni Role
+//         };
+
+//         console.log("User attempting delete:", user);
+
+//         // ✅ Fetch User's Role & Allowed Delete Levels
+//         const userRole = await LevelHierarchy.findOne({
+//             where: { level: user.level_name } // Either Logged-in user or Dummy Chidhagni
+//         });
+
+//         if (!userRole) {
+//             return res.status(403).json({ message: "User level not found." }); // ✅ Prevents multiple responses
+//         }
+
+//         const allowedLevels = Array.isArray(userRole.can_create) ? userRole.can_create : [];
+//         console.log("🚀 Allowed Levels for Deletion:", allowedLevels);
+//         console.log("🔍 Role Level of Role to Delete:", existingRole.level_name);
+//         console.log("✅ Condition Check:", allowedLevels.includes(existingRole.level_name));
+
+//         // ✅ Permission Check
+//         if (!allowedLevels.includes(existingRole.level_name)) {
+//             return res.status(403).json({ message: "You do not have permission to delete this role." }); // ✅ Prevents multiple responses
+//         }
+
+//         // ✅ Delete Role
+//         await Roles.destroy({ where: { id } });
+
+//         console.log("✅ Role Deleted Successfully:", id);
+//         return res.status(200).json({ message: "Role deleted successfully" });
+
+//     } catch (error) {
+//         console.error("❌ Error deleting role:", error);
+//         return res.status(500).json({ message: "Server error", error: error.message });
+//     }
+// });
+
+router.put("/delete-role/:id", async (req, res) => {
     try {
         const { id } = req.params;
-        console.log("🔥 Deleting Role ID:", id);
+        console.log("🔥 Attempting to Soft Delete Role ID:", id);
 
         // ✅ Check if Role Exists
         const existingRole = await Roles.findOne({ where: { id } });
@@ -634,7 +692,7 @@ router.delete("/delete-role/:id", async (req, res) => {
             role_name: "Chidhagni" // Chidhagni Role
         };
 
-        console.log("User attempting delete:", user);
+        console.log("User attempting to delete:", user);
 
         // ✅ Fetch User's Role & Allowed Delete Levels
         const userRole = await LevelHierarchy.findOne({
@@ -655,18 +713,21 @@ router.delete("/delete-role/:id", async (req, res) => {
             return res.status(403).json({ message: "You do not have permission to delete this role." }); // ✅ Prevents multiple responses
         }
 
-        // ✅ Delete Role
-        await Roles.destroy({ where: { id } });
+        const currentStatus = existingRole.is_active;
+        const newStatus = currentStatus === true ? false : true;
 
-        console.log("✅ Role Deleted Successfully:", id);
-        return res.status(200).json({ message: "Role deleted successfully" });
+        // ✅ Soft delete the role by setting `is_active` to false
+        existingRole.is_active = newStatus;
+        await existingRole.save();
+
+        const statusMessage = newStatus ? "reactivated" : "deactivated";
+        res.status(200).json({ message: `Applicant successfully ${statusMessage}` });
 
     } catch (error) {
-        console.error("❌ Error deleting role:", error);
+        console.error("❌ Error soft deleting role:", error);
         return res.status(500).json({ message: "Server error", error: error.message });
     }
 });
-
 
 
 /**

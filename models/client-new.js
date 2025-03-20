@@ -1,5 +1,5 @@
 module.exports = (sequelize, DataTypes) => {
-    const ClientPage = sequelize.define('ClientPageNew', {
+    const ClientPageNew = sequelize.define('ClientPageNew', {
         client_name: {
             type: DataTypes.STRING,
             allowNull: false,
@@ -90,5 +90,8 @@ module.exports = (sequelize, DataTypes) => {
         tableName: 'ClientPageNew',
     });
 
-    return ClientPage;
+    
+
+    return ClientPageNew;
 };
+// models/ClientPageNew.js

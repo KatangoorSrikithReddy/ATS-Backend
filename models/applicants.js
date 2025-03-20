@@ -25,6 +25,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       unique: true
     },
+    is_active: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true // Default value is true, indicating active by default
+    },
     created_by: {
       type: DataTypes.UUID,
       allowNull: false
