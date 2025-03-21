@@ -569,6 +569,7 @@ router.put("/update/:id", upload.single("upload"), async (req, res) => {
             isactive,
             fedral_id,
             client_visibility,
+            contacts_number,
             contacts
         } = req.body;
 
@@ -670,6 +671,7 @@ router.put("/update/:id", upload.single("upload"), async (req, res) => {
             about_company: about_company || client.about_company,
             industry: industry || client.industry,
             category: category || client.category,
+            contacts_number:contacts_number||client.contacts_number,
             created_by: created_by || client.created_by,
             isactive: isactive !== undefined ? isactive : client.isactive,
             document_details: documentDetails // ✅ Ensure this is defined
