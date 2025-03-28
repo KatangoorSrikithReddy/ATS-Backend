@@ -24,8 +24,8 @@ db.User = require('./user.js')(sequelize, Sequelize);
 console.log("Is it working")
 // db.Client = require('./clients.js')(sequelize, Sequelize);
 db.JobRequest = require('./jobrequest.js')(sequelize, Sequelize);
-db.ClientPage = require('./clientpage.js')(sequelize, Sequelize);
-db.Contact = require('./clientcontact.js')(sequelize, Sequelize); // New Contact model
+// db.ClientPage = require('./clientpage.js')(sequelize, Sequelize);
+// db.Contact = require('./clientcontact.js')(sequelize, Sequelize); // New Contact model
 db.Roles = require('./roles.js')(sequelize, Sequelize);
 db.Individuals = require('./individuals.js')(sequelize, Sequelize);
 db.LevelHierarchy = require('./levelhierarchy.js')(sequelize, Sequelize);
@@ -100,14 +100,14 @@ db.Roles.hasMany(db.Roles, { foreignKey: "parent_role_id", as: "ChildRoles" });
 
 
 
-db.ClientPage.hasMany(db.Contact, {
-foreignKey: "client_id",  // Explicitly set the foreign key to client_id
-as: "contacts"            // Alias for referencing associated contacts
-});
-db.Contact.belongsTo(db.ClientPage, {
-foreignKey: "client_id",  // Explicitly set the foreign key to client_id
-as: "client"              // Alias for referencing the associated client
-});
+// db.ClientPage.hasMany(db.Contact, {
+// foreignKey: "client_id",  // Explicitly set the foreign key to client_id
+// as: "contacts"            // Alias for referencing associated contacts
+// });
+// db.Contact.belongsTo(db.ClientPage, {
+// foreignKey: "client_id",  // Explicitly set the foreign key to client_id
+// as: "client"              // Alias for referencing the associated client
+// });
 // ClientPage has many JobRequests
 db.ClientPageNew.hasMany(db.JobRequest, {
   foreignKey: "client_id",  // Foreign key to link JobRequest with ClientPage

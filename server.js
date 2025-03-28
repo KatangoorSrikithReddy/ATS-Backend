@@ -39,11 +39,11 @@ app.use(cors({
 app.use(morgan('dev')); // 'dev' format gives you concise colored output
 app.use('/auth', authRouter);
 
-app.use('/clients', clientRouter);
+// app.use('/clients', clientRouter);
 app.use('/job-requests', jobRequestRoutes);
-app.use('/client-page', clientpageRoutes )
+// app.use('/client-page', clientpageRoutes )
 
-app.use('/clientcontact', contactRouter);
+// app.use('/clientcontact', contactRouter);
 app.use('/roles', rolesRouter)
 app.use('/individuals', IndividualRouter )
 app.use("/individualsRoles", IndividualandRoles)

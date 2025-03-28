@@ -179,12 +179,12 @@ const { Op } = require("sequelize");
             ? (parent_role_id ?? userRoleid.role.id) // If parent_role_id is null, use userRoleid.role.id
             : userRoleid.role.id;
 
-        console.log("🆕 Parent Role ID Assigned:", finalParentRoleId);
+            console.log("🆕 Parent Role ID Assigned:", finalParentRoleId);
 
             console.log("🔍 Role Level Name:", userRoleid.role.level_name);
-console.log("🔍 Parent Role ID (Before):", parent_role_id);
-console.log("🔍 User Role ID:", userRoleid.role.id);
-console.log("🆕 Parent Role ID Assigned:", finalParentRoleId);
+            console.log("🔍 Parent Role ID (Before):", parent_role_id);
+            console.log("🔍 User Role ID:", userRoleid.role.id);
+            console.log("🆕 Parent Role ID Assigned:", finalParentRoleId);
 
             // ✅ Create New Role
             const newRole = await Roles.create({
@@ -551,9 +551,15 @@ router.put("/:id", authenticateToken, async (req, res) => {
         }
         const existingPermissions = existingRole.permissions;
 
-        if (JSON.stringify(existingPermissions) === JSON.stringify(permissions)) {
-        // If the permissions have not changed, respond with no changes made
-        return res.status(200).json({ message: "No changes made to permissions." });
+        const isSamePermissions = JSON.stringify(existingRole.permissions) === JSON.stringify(permissions);
+        const isSameRoleName = existingRole.role_name === role_name;
+        const isSameDescription = existingRole.description === description;
+        const isSameLevelCode = existingRole.level_name === level_code;
+        const isSameParentRoleId = existingRole.parent_role_id === (parent_role_id || existingRole.parent_role_id);
+
+        // If all fields are same, skip update
+        if (isSamePermissions && isSameRoleName && isSameDescription && isSameLevelCode && isSameParentRoleId) {
+            return res.status(200).json({ message: "No changes made to role." });
         }
 
         const finalParentRoleId = parent_role_id || existingRole.parent_role_id;
