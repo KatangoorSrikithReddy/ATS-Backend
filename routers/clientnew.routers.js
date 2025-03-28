@@ -295,7 +295,7 @@ router.get("/list", async (req, res) => {
             industry: client.industry,
             category: client.category,
             created_by: client.created_by,
-            document: client.document_details || "No document uploaded",
+            document: client.document_details || null,
             isactive: client.is_active,
         
         }));
@@ -602,52 +602,114 @@ router.put("/update/:id", upload.single("upload"), async (req, res) => {
         let documentDetails = client?.document_details || null;
 
         // ✅ Handle File Update in MinIO
+        // try {
+        //     console.log("📂 Document Details Before Update:", documentDetails);
+        //     console.log("📂 Incoming File:", req.file);
+        
+        //     let oldFileRemoved = false;
+        
+        //     // ✅ Remove old file only if a new file is provided
+        //     if (req.file && documentDetails?.file_url) {
+        //         try {
+        //             const oldFileName = documentDetails.file_url.split("/").pop();
+        //             await minioClient.removeObject(bucketName, oldFileName);
+        //             console.log(`✅ Old File Removed: ${oldFileName}`);
+        //             oldFileRemoved = true;
+        //         } catch (error) {
+        //             console.error("⚠️ Failed to remove old file:", error.message);
+        //         }
+        //     }
+        
+        //     // ✅ Upload new file only if a new file is provided
+        //     if (req.file) {
+        //         try {
+        //             const fileName = `${Date.now()}-${req.file.originalname}`;
+        //             await minioClient.putObject(bucketName, fileName, req.file.buffer, req.file.size, {
+        //                 "Content-Type": req.file.mimetype
+        //             });
+        
+        //             const fileUrl = `http://127.0.0.1:9000/${bucketName}/${fileName}`;
+        //             console.log(`✅ New File Uploaded: ${fileName}`);
+        
+        //             documentDetails = {
+        //                 file_name: req.file.originalname,
+        //                 file_type: req.file.mimetype,
+        //                 file_size: req.file.size,
+        //                 file_url: fileUrl
+        //             };
+        
+        //             console.log("📤 Document Successfully Updated:", documentDetails);
+        //         } catch (error) {
+        //             console.error("❌ Error Uploading New File:", error.message);
+        //         }
+        //     } else {
+        //         console.log("⚠️ No new file provided. Keeping the existing file.");
+        //     }
+        // } catch (error) {
+        //     console.error("❌ Unexpected Error in Document Handling:", error.message);
+        // }
+        // ✅ Handle File Update in MinIO
+try {
+    console.log("📂 Document Details Before Update:", documentDetails);
+    console.log("📂 Incoming File:", req.file);
+  
+    let oldFileRemoved = false;
+  
+    // ✅ Remove old file only if a new file is provided
+    if (req.file && documentDetails?.file_url) {
+      try {
+        const oldFileName = documentDetails.file_url.split("/").pop();
+        await minioClient.removeObject(bucketName, oldFileName);
+        console.log(`✅ Old File Removed: ${oldFileName}`);
+        oldFileRemoved = true;
+      } catch (error) {
+        console.error("⚠️ Failed to remove old file:", error.message);
+      }
+    }
+  
+    // ✅ Upload new file
+    if (req.file) {
+      try {
+        const fileName = `${Date.now()}-${req.file.originalname}`;
+        await minioClient.putObject(bucketName, fileName, req.file.buffer, req.file.size, {
+          "Content-Type": req.file.mimetype
+        });
+  
+        const fileUrl = `http://127.0.0.1:9000/${bucketName}/${fileName}`;
+        console.log(`✅ New File Uploaded: ${fileName}`);
+  
+        documentDetails = {
+          file_name: req.file.originalname,
+          file_type: req.file.mimetype,
+          file_size: req.file.size,
+          file_url: fileUrl
+        };
+  
+        console.log("📤 Document Successfully Updated:", documentDetails);
+      } catch (error) {
+        console.error("❌ Error Uploading New File:", error.message);
+      }
+    }
+  
+    // ✅ If NO file was uploaded AND previous file exists — this means user deleted it
+    if (!req.file && !req.body.document_details) {
+      if (documentDetails?.file_url) {
         try {
-            console.log("📂 Document Details Before Update:", documentDetails);
-            console.log("📂 Incoming File:", req.file);
-        
-            let oldFileRemoved = false;
-        
-            // ✅ Remove old file only if a new file is provided
-            if (req.file && documentDetails?.file_url) {
-                try {
-                    const oldFileName = documentDetails.file_url.split("/").pop();
-                    await minioClient.removeObject(bucketName, oldFileName);
-                    console.log(`✅ Old File Removed: ${oldFileName}`);
-                    oldFileRemoved = true;
-                } catch (error) {
-                    console.error("⚠️ Failed to remove old file:", error.message);
-                }
-            }
-        
-            // ✅ Upload new file only if a new file is provided
-            if (req.file) {
-                try {
-                    const fileName = `${Date.now()}-${req.file.originalname}`;
-                    await minioClient.putObject(bucketName, fileName, req.file.buffer, req.file.size, {
-                        "Content-Type": req.file.mimetype
-                    });
-        
-                    const fileUrl = `http://127.0.0.1:9000/${bucketName}/${fileName}`;
-                    console.log(`✅ New File Uploaded: ${fileName}`);
-        
-                    documentDetails = {
-                        file_name: req.file.originalname,
-                        file_type: req.file.mimetype,
-                        file_size: req.file.size,
-                        file_url: fileUrl
-                    };
-        
-                    console.log("📤 Document Successfully Updated:", documentDetails);
-                } catch (error) {
-                    console.error("❌ Error Uploading New File:", error.message);
-                }
-            } else {
-                console.log("⚠️ No new file provided. Keeping the existing file.");
-            }
+          const oldFileName = documentDetails.file_url.split("/").pop();
+          await minioClient.removeObject(bucketName, oldFileName);
+          console.log(`🗑️ File deleted due to empty upload.`);
         } catch (error) {
-            console.error("❌ Unexpected Error in Document Handling:", error.message);
+          console.error("⚠️ Error deleting file from MinIO:", error.message);
         }
+      }
+  
+      documentDetails = null; // ✅ clear it from DB
+    }
+  
+  } catch (error) {
+    console.error("❌ Unexpected Error in Document Handling:", error.message);
+  }
+  
 
         // ✅ Log Final Document Details
         console.log("📂 Final Document Details:", documentDetails);
@@ -725,7 +787,7 @@ router.put("/update/:id", upload.single("upload"), async (req, res) => {
  *       500:
  *         description: Server error
  */
-router.delete("/delete/:id", async (req, res) => {
+router.put("/delete/:id", async (req, res) => {
     try {
         const clientId = req.params.id;
         const client = await ClientPageNew.findByPk(clientId);
@@ -734,10 +796,13 @@ router.delete("/delete/:id", async (req, res) => {
             return res.status(404).json({ error: "Client not found" });
         }
 
-        // ✅ SOFT DELETE: Set `is_active` to false
-        await client.update({ is_active: false });
+        const currentStatus = client.is_active;
+        const newStatus = currentStatus === true ? false : true;
 
-        res.json({ message: "Client soft deleted successfully!" });
+        client.is_active = newStatus;
+        await client.save();
+        const statusMessage = newStatus ? "reactivated" : "deactivated";
+        res.status(200).json({ message: `Applicant successfully ${statusMessage}` });
 
     } catch (error) {
         console.error("Error in soft delete:", error);
