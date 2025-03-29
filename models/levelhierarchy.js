@@ -53,7 +53,7 @@ module.exports = (sequelize, DataTypes) => {
         }
     }, {
         timestamps: false,
-        tableName: "LevelHierarchy" // ✅ Enforce explicit table name
+        tableName: "levelhierarchy" // ✅ Enforce explicit table name
     });
 
     // ✅ Define Self-referencing Relationship for Parent Role

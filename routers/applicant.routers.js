@@ -103,8 +103,7 @@ router.get("/", authenticateToken, async (req, res) => {
  *         description: Internal Server Error
  */
 router.post("/",  async (req, res) => {
-  created_by = "srikith";
-  updated_by = "srikith";
+ 
   try {
     console.log("This is the request body:", req.body);
     // Fetch the last applicant_id to increment the number
@@ -124,7 +123,7 @@ router.post("/",  async (req, res) => {
     }
 
     // Create a new applicant record
-    const { applicant_name, mobile_number, email_address} = req.body;
+    const { applicant_name, mobile_number, email_address, created_by, updated_by} = req.body;
 
     const newApplicant = await Applicants.create({
       applicant_id: newApplicantId, // Use the newly generated numeric applicant_id

@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-          model: 'ClientPageNew', // This should match the 'clients' table in the database
+          model: 'clientpagenew', // This should match the 'clients' table in the database
           key: 'id',
         },
       },
@@ -20,6 +20,7 @@ module.exports = (sequelize, DataTypes) => {
       work_mode_type: DataTypes.STRING,
       job_type: DataTypes.STRING,
       status: DataTypes.STRING,
+      created_by: DataTypes.STRING,
       primary_skills: DataTypes.STRING,
       immediate_joining: DataTypes.STRING,
       description: DataTypes.STRING,

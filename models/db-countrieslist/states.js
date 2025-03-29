@@ -17,7 +17,7 @@ const State = sequelize.define("State", {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: "Countries",
+      model: "Country",
       key: "id",
     },
     createdAt: {
@@ -31,7 +31,7 @@ const State = sequelize.define("State", {
       defaultValue: DataTypes.NOW
     }
   }
-}, { timestamps: true });
+}, { timestamps: true, tableName : "states" });
 
 return State;
 };

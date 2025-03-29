@@ -55,7 +55,7 @@ module.exports = (sequelize, DataTypes) => {
         }
     }, {
         timestamps: false,
-        tableName: "Roles" // ✅ Explicit table name
+        tableName: "roles" // ✅ Explicit table name
     });
 
     return Roles;

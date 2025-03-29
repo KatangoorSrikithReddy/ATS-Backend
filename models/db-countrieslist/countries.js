@@ -22,7 +22,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW
     }
-  }, { timestamps: true });
+  }, { timestamps: true, tableName : 'countries' });
 
   return Country;
 };

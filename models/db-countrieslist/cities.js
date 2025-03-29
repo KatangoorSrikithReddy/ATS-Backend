@@ -20,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: "States",
+        model: "State",
         key: "id"
       }
     },
@@ -34,7 +34,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW
     }
-  }, { timestamps: true });
+  }, { timestamps: true , tableName : 'cities'});
 
   // Define Associations
   // City.belongsTo(State, { foreignKey: "state_id", onDelete: "CASCADE" });

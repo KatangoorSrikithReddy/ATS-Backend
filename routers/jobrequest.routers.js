@@ -161,7 +161,7 @@ router.get('/', authenticateToken, async (req, res) => {
     const jobRequests = await JobRequest.findAll({
       attributes: [
         'id', 'job_title', 'job_location', 'pay_range', 'work_mode_type', 'job_type',
-        'status', 'primary_skills', 'immediate_joining', 'description', 'is_active', 'client_id' // Include client_id
+        'status', 'primary_skills', 'immediate_joining', 'description', 'is_active', 'client_id' , 'created_by' // Include client_id
       ],  // Select only the necessary fields from JobRequest
       include: [{
         model: ClientPageNew,  // Include the Client model
@@ -184,6 +184,7 @@ router.get('/', authenticateToken, async (req, res) => {
       immediate_joining: jobRequest.immediate_joining,
       description: jobRequest.description,
       is_active: jobRequest.is_active,
+      created_by : jobRequest.created_by,
       client_name: jobRequest.client.client_name  // Include client_name from the associated Client model
     }));
 
