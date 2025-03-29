@@ -9,7 +9,7 @@ console.log("Client Page New", ClientPageNew);
 
 const { v4: uuidv4 } = require("uuid");
 
-
+const authenticateToken = require('../middlewaare/auth');
 // const storage = multer.diskStorage({
 //     destination: function (req, file, cb) {
 //         cb(null, 'uploads/'); // Ensure this folder exists
@@ -128,8 +128,12 @@ const upload = multer({ storage: multer.memoryStorage() });
  *       500:
  *         description: Server error
  */
-router.post("/create", upload.single("upload"), async (req, res) => {
+router.post("/create", authenticateToken, upload.single("upload"), async (req, res) => {
     console.log("this is triggering ")
+
+    const created_by = req.user;
+    console.log("this to create information", created_by);
+   
     try {
         if (!req.file) {
             return res.status(400).json({ error: "File is required" });
@@ -138,7 +142,7 @@ router.post("/create", upload.single("upload"), async (req, res) => {
         console.log("this is required", req.body)
 
         const { client_name, contacts, contacts_number,email_id, address, country, state, city, postal_code,
-            website, status, primary_owner, about_company, industry, category, created_by } = req.body;
+            website, status, primary_owner, about_company, industry, category, created_by, fedral_id } = req.body;
             
         // ✅ Parse contacts JSON and ensure each contact has a UUID
 
@@ -193,6 +197,7 @@ if (contacts) {
             email_id,
             contacts_number,
             address,
+            fedral_id,
             country,
             state,
             city,
@@ -269,7 +274,10 @@ if (contacts) {
  *       500:
  *         description: Server error
  */
-router.get("/list", async (req, res) => {
+router.get("/list",authenticateToken, async (req, res) => {
+    const created_by = req.user;
+    console.log("this to create information", created_by);
+   
     try {
         // ✅ Fetch all clients from the database
         const clients = await ClientPageNew.findAll();
