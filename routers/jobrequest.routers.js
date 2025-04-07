@@ -330,4 +330,101 @@ router.delete('/:jobRequestId', async (req, res) => {
   }
 });
 
+
+/**
+ * @swagger
+ * /job-requests/client/{clientId}:
+ *   get:
+ *     summary: Get job requests by client ID
+ *     description: Retrieve all job requests associated with a specific client.
+ *     tags:
+ *       - JobRequests
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: clientId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: The ID of the client
+ *     responses:
+ *       200:
+ *         description: A list of job requests for the client
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   job_title:
+ *                     type: string
+ *                   job_location:
+ *                     type: string
+ *                   pay_range:
+ *                     type: string
+ *                   work_mode_type:
+ *                     type: string
+ *                   job_type:
+ *                     type: string
+ *                   status:
+ *                     type: string
+ *                   created_by:
+ *                     type: string
+ *                   primary_skills:
+ *                     type: string
+ *                   immediate_joining:
+ *                     type: string
+ *                   description:
+ *                     type: string
+ *                   is_active:
+ *                     type: boolean
+ *                   client:
+ *                     type: object
+ *                     properties:
+ *                       client_name:
+ *                         type: string
+ *       500:
+ *         description: Server error
+ */
+
+router.get('/client/:clientId',  async (req, res) => {
+  console.log("this is client id", req.params.clientId);
+  const { clientId } = req.params;
+
+  try {
+    const jobRequests = await JobRequest.findAll({
+      where: { client_id: clientId },
+      attributes: [
+        'id',
+        'job_title',
+        'job_location',
+        'pay_range',
+        'work_mode_type',
+        'job_type',
+        'status',
+        'created_by',
+        'primary_skills',
+        'immediate_joining',
+        'description',
+        'is_active'
+      ],
+      // include: [{
+      //   model: ClientPageNew,
+      //   as: 'client',
+      //   attributes: ['client_name']
+      // }]
+    });
+
+    res.json(jobRequests);
+  } catch (error) {
+    console.error('Error fetching job requests by client:', error);
+    res.status(500).json({ error: 'Failed to retrieve job requests', details: error.message });
+  }
+});
+
+
 module.exports = router;
