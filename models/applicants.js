@@ -8,7 +8,7 @@ module.exports = (sequelize, DataTypes) => {
       primaryKey: true
     },
     applicant_id: {
-        type: DataTypes.STRING, // Change to INTEGER
+        type: DataTypes.INTEGER,// Change to INTEGER
         allowNull: false,
         unique: true
     },
