@@ -3,17 +3,21 @@ require("dotenv").config(); // ✅ Load .env variables
 const {Sequelize, DataTypes} = require("sequelize");
 const dbConfig = require("../config/config.js"); 
 
+const env = process.env.NODE_ENV || "development";
+const config = dbConfig[env]; // picks development, test, or production
 
 const sequelize = new Sequelize(
-    dbConfig.development.database,
-    dbConfig.development.username,
-    dbConfig.development.password,
-    {
-      host: dbConfig.development.host,
-      dialect: dbConfig.development.dialect,
-      logging: false, // Optional: Prevents console logs from Sequelize
-    }
-  );
+  config.database,
+  config.username,
+  config.password,
+  {
+    host: config.host,
+    dialect: config.dialect,
+    port: config.port || 3306, // ✅ Optional, good to include
+    logging: false
+  }
+);
+
 
 const db = {};
 

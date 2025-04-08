@@ -1276,6 +1276,255 @@ router.put("/update-user/:id", authenticateToken, async (req, res) => {
 
 
 
+
+
+
+
+router.put("/toggle-user-role/:id", authenticateToken, async (req, res) => {
+    try {
+      const { id } = req.params; // UserRoles ID
+      const updated_by = req.user.id;
+  
+      console.log("🔁 Soft toggle request for UserRoles ID:", id);
+  
+      // 1️⃣ Fetch the UserRoles record with related user and role
+      const userRole = await UserRoles.findOne({
+        where: { id },
+        include: [
+          {
+            model: Individuals,
+            as: "user",
+            attributes: ["id", "username", "first_name", "last_name"]
+          },
+          {
+            model: Roles,
+            as: "role",
+            attributes: ["id", "role_name", "level_name", "is_active"]
+          }
+        ]
+      });
+  
+      if (!userRole) {
+        return res.status(404).json({ message: "UserRoles record not found." });
+      }
+  
+      const currentStatus = userRole.is_active;
+      const targetRoleLevel = userRole.role.level_name;
+  
+      console.log("🔍 Current Status:", currentStatus);
+      console.log("🧠 Target Role Level:", targetRoleLevel);
+  
+      // 2️⃣ Prevent disabling critical roles (e.g., Super Admin)
+     
+  
+      // 3️⃣ Validate logged-in user's permission level
+      const loggedInUserRole = await UserRoles.findOne({
+        where: { user_id: updated_by },
+        include: [
+          {
+            model: Roles,
+            as: "role",
+            attributes: ["id", "role_name", "level_name"]
+          }
+        ]
+      });
+  
+      if (!loggedInUserRole) {
+        return res.status(403).json({ message: "Logged-in user's role not found." });
+      }
+  
+      const currentUserLevel = loggedInUserRole.role.level_name;
+      const allowedLevels = await LevelHierarchy.findOne({ where: { level: currentUserLevel } });
+  
+      if (!allowedLevels || !Array.isArray(allowedLevels.can_create)) {
+        return res.status(403).json({ message: "You are not allowed to modify any roles." });
+      }
+  
+      const canToggle = allowedLevels.can_create
+        .map((lvl) => lvl.toLowerCase())
+        .includes(targetRoleLevel.toLowerCase());
+  
+      if (!canToggle) {
+        return res.status(403).json({
+          message: "You do not have permission to modify users with this role level."
+        });
+      }
+  
+      // 4️⃣ Perform soft toggle
+      const newStatus = !currentStatus;
+      userRole.is_active = newStatus;
+      userRole.updated_by = updated_by;
+      userRole.updated_on = new Date();
+      await userRole.save();
+  
+      const statusMsg = newStatus ? "reactivated" : "deactivated";
+      console.log(`✅ UserRoles ${statusMsg} successfully`);
+  
+      res.status(200).json({
+        message: `UserRoles successfully ${statusMsg}.`,
+        userRole: {
+          id: userRole.id,
+          user: userRole.user,
+          role: userRole.role,
+          is_active: userRole.is_active
+        }
+      });
+    } catch (error) {
+      console.error("❌ Error toggling UserRoles status:", error);
+      res.status(500).json({ message: "Server error", error: error.message });
+    }
+  });
+  
+
+/**
+ * @swagger
+ * /individualsRoles/toggle-user-role/{id}:
+ *   put:
+ *     summary: Soft delete or reactivate a UserRoles record
+ *     tags:
+ *       - Individuals and Roles
+ *     description: >
+ *       Toggles the `is_active` status of a UserRoles record based on permission defined in LevelHierarchy.
+ *       Only users with allowed role levels can toggle the status.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: The UserRoles ID (UUID) to toggle
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: UserRoles successfully toggled
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 userRole:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     is_active:
+ *                       type: boolean
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: string
+ *                         username:
+ *                           type: string
+ *                         email:
+ *                           type: string
+ *                         first_name:
+ *                           type: string
+ *                         last_name:
+ *                           type: string
+ *                     role:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: string
+ *                         role_name:
+ *                           type: string
+ *                         level_name:
+ *                           type: string
+ *       403:
+ *         description: Permission denied
+ *       404:
+ *         description: UserRoles or Role not found
+ *       500:
+ *         description: Server error
+ */
+router.put("/toggle-user-role/:id", authenticateToken, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updated_by = req.user.id;
+  
+      const userRole = await UserRoles.findOne({
+        where: { id },
+        include: [
+          {
+            model: Individuals,
+            as: "user",
+            attributes: ["id", "username", "email", "first_name", "last_name"]
+          },
+          {
+            model: Roles,
+            as: "role",
+            attributes: ["id", "role_name", "level_name", "parent_role_id"]
+          }
+        ]
+      });
+  
+      if (!userRole) return res.status(404).json({ message: "User role record not found." });
+  
+      const currentStatus = userRole.is_active;
+      const targetRoleId = userRole.role.id;
+  
+      const roleData = await Roles.findOne({
+        where: { id: targetRoleId },
+        attributes: ["level_name"]
+      });
+  
+      if (!roleData) return res.status(400).json({ message: "Invalid role ID." });
+  
+      const loggedInUserRole = await UserRoles.findOne({
+        where: { user_id: updated_by },
+        include: [
+          {
+            model: Roles,
+            as: "role",
+            attributes: ["id", "role_name", "level_name"]
+          }
+        ]
+      });
+  
+      if (!loggedInUserRole) return res.status(403).json({ message: "Logged-in user's role not found." });
+  
+      const levelPermissions = await LevelHierarchy.findOne({
+        where: { level: loggedInUserRole.role.level_name }
+      });
+  
+      const allowedLevels = Array.isArray(levelPermissions?.can_create)
+        ? levelPermissions.can_create.map((l) => l.toLowerCase())
+        : [];
+  
+      const isAllowed = allowedLevels.includes(roleData.level_name.toLowerCase());
+  
+      if (!isAllowed)
+        return res.status(403).json({ message: "You do not have permission to toggle this user-role." });
+  
+      const newStatus = !currentStatus;
+      userRole.is_active = newStatus;
+      userRole.updated_by = updated_by;
+      userRole.updated_on = new Date();
+  
+      await userRole.save();
+  
+      return res.status(200).json({
+        message: `UserRoles successfully ${newStatus ? "reactivated" : "deactivated"}.`,
+        userRole: {
+          id: userRole.id,
+          user: userRole.user,
+          role: userRole.role,
+          is_active: userRole.is_active
+        }
+      });
+    } catch (error) {
+      console.error("Error toggling user role:", error);
+      return res.status(500).json({ message: "Server error", error: error.message });
+    }
+  });
+  
+
+
 module.exports = router;
 
 

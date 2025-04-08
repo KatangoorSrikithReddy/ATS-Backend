@@ -38,7 +38,12 @@ module.exports = (sequelize, DataTypes) => {
         updated_by: {
             type: DataTypes.UUID,
             allowNull: true,  // ✅ Stores the ID of the user who last updated the role assignment
-        }
+        },
+        is_active: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: true,
+            allowNull: false
+        },
     }, {
         timestamps: false,
         tableName: "userroles"
