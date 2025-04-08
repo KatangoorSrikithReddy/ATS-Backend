@@ -31,10 +31,12 @@ app.use(express.json());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors({
-  origin: 'http://localhost:3000', // React frontend URL
+  // origin: ['http://localhost', 'http://69.62.72.239'], // React frontend URL
+  origin: ['http://localhost:3000'], // React frontend URL
+ 
   credentials: true,
 }));
-
+ 
 // Use Morgan to log requests
 app.use(morgan('dev')); // 'dev' format gives you concise colored output
 app.use('/auth', authRouter);

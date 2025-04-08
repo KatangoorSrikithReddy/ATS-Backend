@@ -56,7 +56,7 @@ router.post("/request-reset", async (req, res) => {
       });
   
       // ✅ Create reset password link
-      const resetLink = `http://localhost:3000/reset-password?token=${resetToken}`;
+      const resetLink = `http://69.62.72.239/reset-password?token=${resetToken}`;
   
       // ✅ Send email
       await transporter.sendMail({

@@ -8,7 +8,11 @@ const { minioClient, bucketName } = require("../config/minio");
 console.log("Client Page New", ClientPageNew);
 
 const { v4: uuidv4 } = require("uuid");
+require('dotenv').config();
 
+const minioHost = process.env.MINIO_ENDPOINT || 'localhost';
+const minioPort = process.env.MINIO_PORT || '9000';
+ 
 const authenticateToken = require('../middlewaare/auth');
 // const storage = multer.diskStorage({
 //     destination: function (req, file, cb) {
@@ -188,7 +192,8 @@ if (contacts) {
         });
 
         // ✅ Generate File URL
-        const fileUrl = `http://127.0.0.1:9000/${bucketName}/${fileName}`;
+        // const fileUrl = `http://127.0.0.1:9000/${bucketName}/${fileName}`;
+        const fileUrl = `http://${minioHost}:${minioPort}/${bucketName}/${fileName}`;
 
         // ✅ Store file details in the database
         const newClient = await ClientPageNew.create({
@@ -683,7 +688,8 @@ try {
           "Content-Type": req.file.mimetype
         });
   
-        const fileUrl = `http://127.0.0.1:9000/${bucketName}/${fileName}`;
+        // const fileUrl = `http://127.0.0.1:9000/${bucketName}/${fileName}`;
+        const fileUrl = `http://${minioHost}:${minioPort}/${bucketName}/${fileName}`;
         console.log(`✅ New File Uploaded: ${fileName}`);
   
         documentDetails = {
