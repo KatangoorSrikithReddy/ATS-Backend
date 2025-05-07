@@ -6,7 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "server": "nodemon server.js",
-    "start": "node server.js"
+    "dev": "cross-env NODE_ENV=development nodemon server.js",
+    "beta": "cross-env NODE_ENV=beta nodemon server.js",
+    "prod": "cross-env NODE_ENV=production nodemon server.js"
   },
   "author": "Chidhagni",
   "license": "ISC",
@@ -29,5 +31,8 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3"
   }
 }
