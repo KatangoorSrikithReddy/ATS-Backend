@@ -23,16 +23,23 @@ const ClientPageNew = require('./routers/clientnew.routers')
 const locationRoutes = require('./routers/location.routers');
 const industryRoutes = require('./routers/industries.routers');
 
+require('dotenv').config();
 
+const allowedOrigin = process.env.CORS_ORIGIN;
+const HOST = process.env.DB_HOST;
 
+console.log('Allowed Origin:', allowedOrigin); // Log the allowed origin for debugging
+console.log('Host:', HOST); // Log the host for debugging
 
+// Middleware to log requests  
+console.log('Allowed Origin:', allowedOrigin); // Log the allowed origin for debugging
 
 app.use(express.json());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors({
   // origin: ['http://localhost', 'http://69.62.72.239'], // React frontend URL
-  origin: ['http://localhost:3000'], // React frontend URL
+  origin: [allowedOrigin], // React frontend URL
  
   credentials: true,
 }));
@@ -137,6 +144,12 @@ app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs)); // Serve Swagge
 // Start the server on port 3000
 const PORT = 8080
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`.blue);
-  console.log(`Swagger UI is available at http://localhost:${PORT}/docs`.yellow);
+  // console.log(`Server is running on http://localhost:${PORT}`.blue);
+  // console.log(`Swagger UI is available at http://localhost:${PORT}/docs`.yellow);
+  console.log(`Server is running on http://${HOST}:${PORT}`.blue);
+console.log(`Swagger UI is available at http://${HOST}:${PORT}/docs`.yellow);
+
 });
+
+// console.log(`Server is running on http://${HOST}:${PORT}`.blue);
+// console.log(`Swagger UI is available at http://${HOST}:${PORT}/docs`.yellow);
