@@ -1,14 +1,14 @@
 const Minio = require("minio");
 
 const minioClient = new Minio.Client({
-    endPoint: process.env.MINIO_ENDPOINT || "localhost", // Replace with your MinIO server URL
-    port: parseInt(process.env.MINIO_PORT) || 9000,      // Default MinIO port
+    endPoint: process.env.MINIO_ENDPOINT, // Replace with your MinIO server URL
+    port: parseInt(process.env.MINIO_PORT) ,    // Default MinIO port
     useSSL: false,  // Set to `true` if MinIO uses SSL
-    accessKey: process.env.MINIO_ACCESS_KEY || "minioadmin",
-    secretKey: process.env.MINIO_SECRET_KEY || "minioadmin"
+    accessKey: process.env.MINIO_ACCESS_KEY,
+    secretKey: process.env.MINIO_SECRET_KEY
 });
 
-const bucketName = "client-files"; // Change as per your MinIO bucket name
+const bucketName =process.env.CLIENt_FILE; // Change as per your MinIO bucket name
 
 // ✅ Ensure Bucket Exists (Create if not exists)
 async function ensureBucketExists() {
