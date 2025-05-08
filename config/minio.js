@@ -8,7 +8,7 @@ const minioClient = new Minio.Client({
     secretKey: process.env.MINIO_SECRET_KEY
 });
 
-const bucketName =process.env.CLIENt_FILE; // Change as per your MinIO bucket name
+const bucketName =process.env.CLIENT_BUCKET_NAME; // Change as per your MinIO bucket name
 
 // ✅ Ensure Bucket Exists (Create if not exists)
 async function ensureBucketExists() {
