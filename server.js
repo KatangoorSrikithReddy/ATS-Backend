@@ -27,9 +27,15 @@ require('dotenv').config();
 
 const allowedOrigin = process.env.CORS_ORIGIN;
 const HOST = process.env.DB_HOST;
+const ENV = process.env.NODE_ENV || 'development';
 
-console.log('Allowed Origin:', allowedOrigin); // Log the allowed origin for debugging
-console.log('Host:', HOST); // Log the host for debugging
+// Set port based on environment
+const PORT = ENV === 'beta' ? 8094 : ENV === 'production' ? 8095 : 8080;
+
+console.log(`Environment: ${ENV}`);
+console.log('Allowed Origin:', allowedOrigin);
+console.log('Host:', HOST);
+console.log('Port:', PORT);
 
 // Middleware to log requests  
 console.log('Allowed Origin:', allowedOrigin); // Log the allowed origin for debugging
@@ -141,14 +147,10 @@ const swaggerOptions = {
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs)); // Serve Swagger docs
 
-// Start the server on port 3000
-const PORT = 8080
+// Start the server on the appropriate port
 app.listen(PORT, () => {
-  // console.log(`Server is running on http://localhost:${PORT}`.blue);
-  // console.log(`Swagger UI is available at http://localhost:${PORT}/docs`.yellow);
-  console.log(`Server is running on http://${HOST}:${PORT}`.blue);
-console.log(`Swagger UI is available at http://${HOST}:${PORT}/docs`.yellow);
-
+  console.log(`Server is running in ${ENV} mode on http://${HOST}:${PORT}`.blue);
+  console.log(`Swagger UI is available at http://${HOST}:${PORT}/docs`.yellow);
 });
 
 // console.log(`Server is running on http://${HOST}:${PORT}`.blue);
