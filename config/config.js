@@ -42,8 +42,8 @@ if (result.error) {
 
 
 console.log(`Environment: ${env}`);
-console.log(`Database Host: ${process.env.ORIGIN}`);
-console.log("👉 Loaded DB_HOST:", process.env.DB_HOST);
+console.log(`Database Host: ${process.env.CORS_ORIGIN}`);
+console.log("👉 Loaded DB_HOST:", process.env.HOST);
 console.log("🔍 Connecting to DB:", {
   host: process.env.DB_HOST,
   port: process.env.DB_PORT,
